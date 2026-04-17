@@ -160,63 +160,83 @@ Stage Summary:
 - All QA tests pass
 
 ---
-## Project Status Assessment
+## Project Status Assessment (Updated after v5.0)
 
-**Current Status:** ✅ v4.0 — Full Facebook page layout support
+**Current Status:** ✅ v5.0 — Major styling overhaul + 6 new features
 
-**Completed Features (v1.0 + v2.0 + v3.0 + v4.0):**
+**Completed Features (v1.0 through v5.0):**
+
+*Core Post Editing:*
 - Profile picture upload with default avatar fallback
 - User name, timestamp, post content editing
 - Visibility selector (Public / Friends / Only Me) with correct icons
 - Optional attached photo upload
 - Engagement metrics (likes, comments, shares) with "Top Liker Name"
 - Shared link preview with title/domain/description/image
-- **Multiple comments support** (add, edit, remove, per-comment likes)
-- **Facebook navigation bar** in preview (authentic 2014 look with search, nav links, user menu)
-- **Facebook wordmark** "facebook" text next to the "f" logo in nav bar
-- **Facebook left sidebar** (220px): profile card, Favourites nav, Pages/Groups/Apps, Friends Online, Create Ad
-- **Facebook right sidebar** (249px): Sponsored ad, People You May Know (3 contacts with Add Friend), Trending topics
-- **3-column layout**: left sidebar | center feed | right sidebar (when both nav bar + sidebars enabled)
-- **Facebook footer** in screenshot mode
-- **"People Also Like" section**: 3 avatar circles with names + See More link (requires 10+ likes)
-- **Watermark toggle**: "Generated with 2014 FB Post Generator" italic watermark
-- **Hashtag highlighting** in blue
-- **See More / See Less** for long posts
-- **Emoji picker** (24 quick-access emojis)
-- **Timestamp presets dropdown**: 9 presets (Just now, 2 min, 15 min, 1 hr, 2 hrs, 5 hrs, Yesterday, 2 days ago, 1 week ago)
-- **Advanced Options panel** (nav bar, sidebars, hashtags, truncate, people also like, watermark toggles)
-- **7 quick presets** (Coffee, Birthday, Shared Link, Achievement, Throwback, Full Screenshot, Viral Post)
-- **Multiple export options**: PNG 3x, PNG 2x, JPEG 3x, Copy to clipboard
+- **Tagged Friends** — add/remove friends shown as "with Name1, Name2" in blue
+- **Location / Check-in** — pin icon + location text between timestamp and post content
+- **Feeling / Activity** — dropdown with 12 presets + custom; "is feeling happy" above post text
 - Character counter (63,206 limit)
 - Reset all fields
+
+*Post Preview Styling (2014 accuracy):*
+- **Update Status composer bar** — authentic 2014-style white box with avatar + "What's on your mind?"
+- **Post header "..." indicator** — three-dots icon next to timestamp
+- **Improved engagement section** — separator line + Like button gradient pill
+- **Better "Write a comment..." input** — 32×32 avatar, gray pill shape
+- **Improved comment bubbles** — #f7f7f7 background, "Most Relevant" text, bolder names
+- **Improved Sponsored ad** — advertiser avatar, close button, "Why am I seeing this?"
+- **Custom border radius** — slider (0-12px) for post card corners
+- **Post background color** — 6 options (white, cream, light-blue, light-green, light-yellow, light-pink)
+- **Hashtag highlighting** in blue
+- **See More / See Less** for long posts
+- **Watermark toggle**: "Generated with 2014 FB Post Generator" italic watermark
+
+*Full Page Layout:*
+- **Facebook navigation bar** (authentic 2014 look with search, nav links, user menu)
+- **Facebook wordmark** "facebook" text next to the "f" logo
+- **Facebook left sidebar** (220px): profile card, Favourites nav, Pages/Groups/Apps, Friends Online
+- **Facebook right sidebar** (249px): Sponsored ad, People You May Know, Trending topics
+- **3-column layout**: left sidebar | center feed | right sidebar
+- **Facebook footer** in screenshot mode
+- **"People Also Like" section** (requires 10+ likes)
+- **More Stories section** — 3 mini post cards below main post
+
+*Comments & Social:*
+- **Multiple comments support** (add, edit, remove, per-comment likes)
+- **Emoji picker** (24 quick-access emojis)
+- **Timestamp presets dropdown**: 9 presets
+- **7 quick presets** (Coffee, Birthday, Shared Link, Achievement, Throwback, Full Screenshot, Viral Post)
+
+*Export & UI:*
+- **Multiple export options**: PNG 3x, PNG 2x, JPEG 3x, Copy to clipboard
 - Collapsible advanced sections with scrollable editor
 - Toast notifications for user feedback
-- Responsive two-panel layout
+- Responsive two-panel layout (desktop + mobile)
 - Preview header badges: "Full Layout", "Watermark", "2014 Style"
 
 **Technical Details:**
-- Next.js 16 with App Router
-- TypeScript throughout
-- Tailwind CSS + inline styles for 2014 accuracy
-- html2canvas for image export (configurable scale)
-- Lucide React icons for editor UI
-- Custom inline SVGs for 2014 Facebook icons (html2canvas compatible)
-- CommentData type for multiple comments
-- FBPostData includes: showNavBar, showSidebars, highlightHashtags, truncateLongPosts, showWatermark, showPeopleAlsoLike
+- Next.js 16 with App Router, TypeScript
+- Tailwind CSS + inline styles (all preview styles inline for html2canvas compatibility)
+- html2canvas for image export (configurable scale up to 3x)
+- Lucide React icons for editor UI only
+- 15+ custom inline SVG icons for 2014 Facebook elements (html2canvas compatible)
+- CommentData type, FBPostData with 25+ fields
+- FBPostData v5 fields: taggedFriends, location, feeling, showMoreStories, borderRadius, postBackground
 
 ---
 ## Potential Improvements for Next Phase
 
 1. **Comment reply threads** — nested replies under comments
-2. **More post types**: Life Event, Check-in, Tagged photo, Shared video
-3. **Font customization**: choose between different 2014-era fonts
+2. **Drag-and-drop** image uploads (photo, commenter avatar, link image)
+3. **Shareable URL** — encode post data in URL params for sharing
 4. **Undo/redo** for editing
-5. **Watermark toggle**: optional "Generated by..." watermark
-6. **Shareable URL**: encode post data in URL params for sharing
-7. **Facebook-style reactions** (pre-2016: only thumbs up)
-8. **Custom background color** for the Facebook page
-9. **Drag-and-drop** image uploads
-10. **Timestamp presets**: "Just now", "2 hrs", "Yesterday", "X minutes ago"
+5. **Life Event post type** — with date, category icon, description
+6. **Group post header** — "Posted in Group Name" with group avatar
+7. **Font customization** — choose between different 2014-era fonts
+8. **Custom date picker** for precise timestamp control
+9. **Post templates gallery** — visual browsing of pre-made templates
+10. **Dark mode** for the editor (not the preview — preview stays 2014-style)
 
 ---
 Task ID: 4
@@ -270,3 +290,56 @@ Stage Summary:
 - 8 new features: Left sidebar, Right sidebar, Facebook wordmark, People Also Like section, Watermark toggle, Timestamp presets dropdown, Viral Post preset, Styling polish
 - Post preview can now produce **complete Facebook page screenshots** with authentic 3-column layout
 - Total preset count: 7 (added Viral Post)
+
+---
+Task ID: 5-a
+Agent: Fullstack Developer
+Task: Major v5.0 styling improvements and new features
+
+Work Log:
+- Read worklog and all source files to understand v4.0 codebase
+- **Updated `FBPostData` type** with 6 new fields:
+  - `taggedFriends: string[]` (default []) — list of tagged friend names
+  - `location: string` (default '') — check-in location
+  - `feeling: string` (default '') — feeling/activity status
+  - `showMoreStories: boolean` (default false) — shows mini post cards below main post
+  - `borderRadius: number` (default 3) — custom post card border radius (0-12px)
+  - `postBackground: PostBackgroundOption` (default 'white') — post content area background color
+- **Exported new constants**: `feelingOptions` (12 preset feelings), `postBackgroundOptions` (6 color choices), `PostBackgroundOption` type
+- **Major rewrite of `fb-post-preview.tsx`** with styling improvements:
+  1. **Update Status composer bar** — New `UpdateStatusComposer` component with user avatar, placeholder "What's on your mind, [userName]?", bottom icons row (Photo, Video, Event, Write Post), white bg, 5px border-radius, 1px #dddfe2 border
+  2. **Improved post card engagement section** — Thin 1px separator between engagement stats and action bar; Like button has gradient background (`linear-gradient(180deg, #f0f3f8, #e8ecf1)`); Action bar has subtle hover-like styling with gray gradient
+  3. **Better "Write a comment..." input** — 32x32 round user avatar on the left, #f0f2f5 gray background, rounded pill shape (18px radius), border #dddfe2, placeholder "Write a comment..." in #9197a3
+  4. **Improved comment bubbles** — Subtle #f7f7f7 background on entire comment row (not just bubble); "Most Relevant" dropdown text with chevron above first comment; Commenter name slightly bolder
+  5. **Improved Sponsored ad box** — 16x16 advertiser avatar circle + "Ad · example.com" text; Close "x" button in top-right of header; "Sponsored" + "Why am I seeing this?" link at bottom; Realistic ad layout
+  6. **Post header "..." dropdown indicator** — Three-dots icon (`DownDotsIcon`) on the right side of post header next to timestamp
+  7. **Tagged Friends display** — Shows "with Name1, Name2, ..." below post content; Each name in #3b5998 blue, bold, clickable-looking
+  8. **Location/Check-in** — Gray pin icon (`PinIcon` SVG) + location text in blue between timestamp and post content
+  9. **Feeling/Activity** — Smiley face icon (`SmileyIcon` SVG) + "[userName] is feeling happy ·" in italic gray above post text
+  10. **More Stories section** — New `MoreStoriesSection` component with 3 mini post cards (avatar, name, 1-line preview, timestamp), authentic 2014 FB sidebar style
+  11. **Custom border radius** — Applied to post card `borderRadius` from `borderRadius` field
+  12. **Background pattern selector** — Post content area uses `getPostBgColor()` helper for 6 color options (white, cream, light-blue, light-green, light-yellow, light-pink)
+- **New inline SVG icons**: `PinIcon`, `SmileyIcon`, `DownDotsIcon`, `PhotoSmallIcon`, `VideoSmallIcon`, `EventSmallIcon`, `CloseXIcon`
+- **Updated presets** with new fields: Coffee & Vibes has location + feeling; Birthday has taggedFriends; Throwback has taggedFriends; Full Screenshot has location + feeling + showMoreStories; Viral Post has showMoreStories; Achievement has feeling
+- **Updated `fb-post-generator.tsx`**:
+  - Version bump v4.0 → v5.0
+  - **Location input** — Below timestamp/visibility section, with MapPin icon
+  - **Feeling/Activity dropdown** — Select with 12 preset feelings + "Custom..." option for freeform text
+  - **Tagged Friends section** — Collapsible with pill-style tags (blue bg, X to remove), Add button, Enter key support
+  - **Advanced Options additions**:
+    - "More Stories Below" toggle (Layers icon)
+    - "Post Border Radius" slider (0-12px range, Minus/Plus icons)
+    - "Post Background" selector (3-column grid, 6 color options with preview swatches)
+  - New imports: `MapPin, SmilePlus, UserPlus, Layers, Palette, Minus` from lucide-react
+  - Extracted `toggleBtnStyle(active)` helper to reduce repetition
+  - Updated `expandedSections` default to include 'taggedFriends' key
+- ESLint: clean (0 errors, 0 warnings)
+- Dev server: compiled successfully
+
+Stage Summary:
+- **Version 5.0** — Major styling overhaul + 6 new features
+- 6 styling improvements: Composer bar, engagement hover/separator, comment input avatar, comment bubble backgrounds, Sponsored ad realism, post header "..." indicator
+- 6 new features: Tagged Friends, Location/Check-in, Feeling/Activity, More Stories section, Custom Border Radius, Post Background Color
+- All new features backward-compatible (default to disabled/empty)
+- Updated presets with realistic new field data
+- Total inline SVG icons: 15 (all html2canvas compatible)

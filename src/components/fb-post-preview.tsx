@@ -70,9 +70,78 @@ function ShareArrowIcon({ size = 13, color = '#7f7f7f' }: { size?: number; color
   )
 }
 
+function PinIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 0C6.1 0 3 3.1 3 7c0 4.5 7 13 7 13s7-8.5 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S8.6 4.5 10 4.5s2.5 1.1 2.5 2.5S11.4 9.5 10 9.5z" fill={color}/>
+    </svg>
+  )
+}
+
+function SmileyIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="10" cy="10" r="8" fill="none" stroke={color} strokeWidth="1.3"/>
+      <circle cx="7" cy="8" r="1.2" fill={color}/>
+      <circle cx="13" cy="8" r="1.2" fill={color}/>
+      <path d="M6.5 12c0 0 1.5 2 3.5 2s3.5-2 3.5-2" fill="none" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function DownDotsIcon({ size = 16, color = '#9197a3' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="10" cy="4" r="1.5" fill={color}/>
+      <circle cx="10" cy="10" r="1.5" fill={color}/>
+      <circle cx="10" cy="16" r="1.5" fill={color}/>
+    </svg>
+  )
+}
+
+function PhotoSmallIcon({ size = 14, color = '#5a7fb5' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="4" width="16" height="12" rx="1" fill="none" stroke={color} strokeWidth="1.3"/>
+      <circle cx="7" cy="9" r="2" fill="none" stroke={color} strokeWidth="1"/>
+      <path d="M2 14l5-5 3 3 4-5 4 7" fill="none" stroke={color} strokeWidth="1.1" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function VideoSmallIcon({ size = 14, color = '#5a7fb5' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="4" width="12" height="12" rx="1.5" fill="none" stroke={color} strokeWidth="1.3"/>
+      <path d="M14 8l4-2.5v9L14 12" fill="none" stroke={color} strokeWidth="1.3" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function EventSmallIcon({ size = 14, color = '#5a7fb5' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="5" width="14" height="12" rx="1.5" fill="none" stroke={color} strokeWidth="1.3"/>
+      <line x1="3" y1="9" x2="17" y2="9" stroke={color} strokeWidth="1.2"/>
+      <line x1="7" y1="3" x2="7" y2="7" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
+      <line x1="13" y1="3" x2="13" y2="7" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function CloseXIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 4L4 12M4 4l8 8" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 // ──────────── Types & Defaults ────────────
 
 export type VisibilityOption = 'public' | 'friends' | 'onlyme'
+
+export type PostBackgroundOption = 'white' | 'cream' | 'light-blue' | 'light-green' | 'light-yellow' | 'light-pink'
 
 export interface CommentData {
   id: string
@@ -107,6 +176,13 @@ export interface FBPostData {
   showSidebars: boolean
   showWatermark: boolean
   showPeopleAlsoLike: boolean
+  // v5.0 new fields
+  taggedFriends: string[]
+  location: string
+  feeling: string
+  showMoreStories: boolean
+  borderRadius: number
+  postBackground: PostBackgroundOption
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -144,7 +220,35 @@ export const defaultPostData: FBPostData = {
   showSidebars: false,
   showWatermark: false,
   showPeopleAlsoLike: false,
+  // v5.0 defaults
+  taggedFriends: [],
+  location: '',
+  feeling: '',
+  showMoreStories: false,
+  borderRadius: 3,
+  postBackground: 'white',
 }
+
+export const feelingOptions = [
+  'feeling happy', 'feeling loved', 'feeling blessed', 'feeling grateful',
+  'feeling excited', 'feeling sad', 'feeling angry', 'feeling tired',
+  'feeling sick', 'feeling confused', 'feeling accomplished', 'feeling thankful',
+]
+
+export const postBackgroundOptions: { value: PostBackgroundOption; label: string; color: string }[] = [
+  { value: 'white', label: 'White', color: '#ffffff' },
+  { value: 'cream', label: 'Cream', color: '#fdf6e3' },
+  { value: 'light-blue', label: 'Light Blue', color: '#e8f0fe' },
+  { value: 'light-green', label: 'Light Green', color: '#e6f4ea' },
+  { value: 'light-yellow', label: 'Light Yellow', color: '#fef7e0' },
+  { value: 'light-pink', label: 'Light Pink', color: '#fce4ec' },
+]
+
+const moreStoriesData = [
+  { name: 'Emily Davis', avatar: defaultAvatar, text: 'Had the best brunch today with friends! 🥞', time: '3 hrs' },
+  { name: 'Alex Turner', avatar: defaultAvatar, text: 'Just finished a 5K run! New personal best 🏃‍♂️', time: '5 hrs' },
+  { name: 'Rachel Kim', avatar: defaultAvatar, text: 'New profile picture. Thoughts? 😊', time: '8 hrs' },
+]
 
 export const presets: { name: string; emoji: string; data: FBPostData }[] = [
   {
@@ -166,6 +270,8 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       ],
       highlightHashtags: true,
       truncateLongPosts: false,
+      location: 'Blue Bottle Coffee, San Francisco',
+      feeling: 'feeling happy',
     },
   },
   {
@@ -186,6 +292,7 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
         { id: '2', commenterName: 'Tom Richards', commenterAvatar: defaultAvatar, commentText: 'Happy birthday! Hope she has the best day ever 🥳', commentTimestamp: '45 min', commentLikes: 1 },
         { id: '3', commenterName: 'Lisa Chen', commenterAvatar: defaultAvatar, commentText: 'Such a sweet post! 🥰', commentTimestamp: '30 min', commentLikes: 3 },
       ],
+      taggedFriends: ['Emily Davis', 'Tom Richards'],
     },
   },
   {
@@ -230,6 +337,7 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
         { id: '2', commenterName: 'Dad', commenterAvatar: defaultAvatar, commentText: 'Well done son! You earned this. 💪', commentTimestamp: '25 min', commentLikes: 22 },
       ],
       highlightHashtags: true,
+      feeling: 'feeling accomplished',
     },
   },
   {
@@ -254,6 +362,7 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       ],
       highlightHashtags: true,
       truncateLongPosts: false,
+      taggedFriends: ['Ashley Williams', 'Ryan Martinez'],
     },
   },
   {
@@ -278,6 +387,9 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
         { id: '2', commenterName: 'Emma Thompson', commenterAvatar: defaultAvatar, commentText: 'That\'s amazing! What charity are you running for?', commentTimestamp: '50 min', commentLikes: 2 },
       ],
       highlightHashtags: true,
+      location: 'Central Park, New York',
+      feeling: 'feeling excited',
+      showMoreStories: true,
     },
   },
   {
@@ -302,6 +414,7 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
         { id: '3', commenterName: 'Mike Anderson', commenterAvatar: defaultAvatar, commentText: 'Shared! My friends need to see this 🔥', commentTimestamp: '45 min', commentLikes: 34 },
       ],
       highlightHashtags: true,
+      showMoreStories: true,
     },
   },
 ]
@@ -325,7 +438,82 @@ function renderTextWithHashtags(text: string, highlight: boolean): React.ReactNo
   })
 }
 
+function getPostBgColor(bg: PostBackgroundOption): string {
+  switch (bg) {
+    case 'cream': return '#fdf6e3'
+    case 'light-blue': return '#e8f0fe'
+    case 'light-green': return '#e6f4ea'
+    case 'light-yellow': return '#fef7e0'
+    case 'light-pink': return '#fce4ec'
+    default: return '#ffffff'
+  }
+}
+
 const TRUNCATE_LENGTH = 280
+
+// ──────────── Update Status Composer Bar ────────────
+
+function UpdateStatusComposer({ userName, profilePicture }: { userName: string; profilePicture: string }) {
+  return (
+    <div style={{
+      backgroundColor: '#ffffff',
+      border: '1px solid #dddfe2',
+      borderRadius: '5px',
+      padding: '8px 10px',
+      marginBottom: '12px',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+      }}>
+        <div style={{
+          width: '36px', height: '36px', minWidth: '36px',
+          borderRadius: '2px', overflow: 'hidden',
+          border: '1px solid #e5e5e5', backgroundColor: '#e9eaed',
+        }}>
+          <img src={profilePicture || defaultAvatar} alt="" style={{
+            width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+          }} />
+        </div>
+        <div style={{
+          flex: 1, backgroundColor: '#f0f2f5', borderRadius: '18px',
+          padding: '8px 12px', fontSize: '13px', color: '#9197a3',
+          cursor: 'text', border: '1px solid #dddfe2',
+        }}>
+          What&apos;s on your mind, {userName || 'User'}?
+        </div>
+      </div>
+      <div style={{
+        borderTop: '1px solid #e5e5e5',
+        marginTop: '8px',
+        paddingTop: '6px',
+        display: 'flex',
+        gap: '4px',
+      }}>
+        {[
+          { label: 'Photo', icon: <PhotoSmallIcon size={14} color="#5a7fb5" /> },
+          { label: 'Video', icon: <VideoSmallIcon size={14} color="#5a7fb5" /> },
+          { label: 'Event', icon: <EventSmallIcon size={14} color="#5a7fb5" /> },
+        ].map(item => (
+          <div key={item.label} style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: '4px', padding: '4px 0', cursor: 'pointer',
+            borderRight: item.label !== 'Event' ? '1px solid #e5e5e5' : 'none',
+          }}>
+            {item.icon}
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#5a7fb5' }}>{item.label}</span>
+          </div>
+        ))}
+        <div style={{
+          padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+        }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: '#5a7fb5' }}>Write Post</span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ──────────── Facebook Navigation Bar ────────────
 
@@ -535,7 +723,7 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
       {/* Friends Online */}
       <div style={{ padding: '6px 0 8px 0' }}>
         <div style={sectionHeaderStyle}>Friends Online</div>
-        {['Amy Chen', 'Brian K.', 'Maria S.'].map((name, i) => (
+        {['Amy Chen', 'Brian K.', 'Maria S.'].map((name) => (
           <div key={name} style={{
             padding: '3px 10px', display: 'flex', alignItems: 'center', gap: '6px',
           }}>
@@ -581,15 +769,54 @@ function FacebookRightSidebar() {
       borderLeft: '1px solid #e5e5e5', fontSize: '12px',
       alignSelf: 'flex-start',
     }}>
-      {/* Sponsored */}
+      {/* Sponsored — improved */}
       <div style={{ borderBottom: '1px solid #e5e5e5' }}>
-        <div style={sectionHeaderStyle}>Sponsored</div>
         <div style={{
-          margin: '4px 10px 8px 10px', padding: '8px',
-          backgroundColor: '#f0f2f5', border: '1px solid #dddfe2', borderRadius: '3px',
-          height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          ...sectionHeaderStyle,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          paddingRight: '10px',
         }}>
-          <span style={{ fontSize: '12px', color: '#9197a3', fontWeight: 600 }}>Ad</span>
+          Sponsored
+          <CloseXIcon size={10} color="#bcc0c4" />
+        </div>
+        <div style={{
+          margin: '4px 10px 8px 10px', padding: '0',
+          backgroundColor: '#f0f2f5', border: '1px solid #dddfe2', borderRadius: '3px',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            padding: '8px 10px 6px 10px',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}>
+            <div style={{
+              width: '16px', height: '16px', borderRadius: '50%',
+              backgroundColor: '#dddfe2', overflow: 'hidden', flexShrink: 0,
+            }}>
+              <img src={defaultAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 600, color: '#1d2129', lineHeight: '13px' }}>
+                TrendyApp
+              </div>
+              <div style={{ fontSize: '9px', color: '#9197a3', lineHeight: '12px' }}>
+                Ad · example.com
+              </div>
+            </div>
+          </div>
+          <div style={{
+            height: '80px', backgroundColor: '#e5e5e5',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderTop: '1px solid #dddfe2',
+          }}>
+            <span style={{ fontSize: '11px', color: '#9197a3', fontWeight: 600 }}>Ad Content</span>
+          </div>
+          <div style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '9px', color: '#9197a3' }}>Sponsored</span>
+            <span style={{ fontSize: '9px', color: '#9197a3' }}>·</span>
+            <span style={{ fontSize: '9px', color: '#3b5998', cursor: 'pointer', textDecoration: 'underline' }}>
+              Why am I seeing this?
+            </span>
+          </div>
         </div>
       </div>
 
@@ -675,6 +902,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
       visibility, likes, comments, shares, topLikerName,
       showCommentPreview, commentsList, showNavBar, highlightHashtags, truncateLongPosts,
       showSidebars, showWatermark, showPeopleAlsoLike,
+      taggedFriends, location, feeling, showMoreStories, borderRadius, postBackground,
     } = data
 
     const hasEngagement = likes > 0 || comments > 0 || shares > 0
@@ -733,6 +961,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
               minWidth: '300px',
               padding: '12px 0 24px 0',
             }}>
+              <UpdateStatusComposer userName={userName} profilePicture={profilePicture} />
               <PostCard
                 profilePicture={profilePicture}
                 userName={userName}
@@ -766,7 +995,13 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                 setExpanded={setExpanded}
                 showPeopleAlsoLike={showPeopleAlsoLike}
                 showWatermark={showWatermark}
+                taggedFriends={taggedFriends}
+                location={location}
+                feeling={feeling}
+                borderRadius={borderRadius}
+                postBackground={postBackground}
               />
+              {showMoreStories && <MoreStoriesSection />}
             </div>
 
             <FacebookRightSidebar />
@@ -811,7 +1046,13 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
               setExpanded={setExpanded}
               showPeopleAlsoLike={showPeopleAlsoLike}
               showWatermark={showWatermark}
+              taggedFriends={taggedFriends}
+              location={location}
+              feeling={feeling}
+              borderRadius={borderRadius}
+              postBackground={postBackground}
             />
+            {showMoreStories && <MoreStoriesSection />}
           </div>
         )}
 
@@ -831,6 +1072,68 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
   }
 )
 
+// ──────────── More Stories Section ────────────
+
+function MoreStoriesSection() {
+  return (
+    <div style={{ marginTop: '10px' }}>
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #dddfe2',
+        borderRadius: '3px',
+        padding: '10px 12px',
+        marginBottom: '8px',
+      }}>
+        <div style={{
+          fontSize: '11px', fontWeight: 600, color: '#9197a3',
+          borderBottom: '1px solid #e5e5e5',
+          paddingBottom: '6px', marginBottom: '8px',
+          textTransform: 'uppercase', letterSpacing: '0.02em',
+        }}>
+          More Stories
+        </div>
+      </div>
+      {moreStoriesData.map((story) => (
+        <div key={story.name} style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #dddfe2',
+          borderRadius: '3px',
+          padding: '10px 12px',
+          marginBottom: '8px',
+          display: 'flex', gap: '8px', alignItems: 'flex-start',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+        }}>
+          <div style={{
+            width: '32px', height: '32px', minWidth: '32px',
+            borderRadius: '2px', overflow: 'hidden',
+            border: '1px solid #e5e5e5', backgroundColor: '#e9eaed',
+          }}>
+            <img src={story.avatar} alt="" style={{
+              width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+            }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#3b5998', cursor: 'pointer' }}>
+                {story.name}
+              </span>
+              <span style={{ fontSize: '10px', color: '#9197a3' }}>·</span>
+              <span style={{ fontSize: '10px', color: '#9197a3' }}>{story.time}</span>
+            </div>
+            <div style={{
+              fontSize: '12px', color: '#1d2129', lineHeight: '16px', marginTop: '2px',
+              overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1,
+              WebkitBoxOrient: 'vertical',
+            }}>
+              {story.text}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ──────────── Post Card (extracted for reuse) ────────────
 
 function PostCard({
@@ -842,6 +1145,7 @@ function PostCard({
   showCommentPreview, commentsList, highlightHashtags,
   truncateLongPosts, shouldTruncate, displayContent, expanded, setExpanded,
   showPeopleAlsoLike, showWatermark,
+  taggedFriends, location, feeling, borderRadius, postBackground,
 }: {
   profilePicture: string
   userName: string
@@ -875,18 +1179,28 @@ function PostCard({
   setExpanded: (v: boolean) => void
   showPeopleAlsoLike: boolean
   showWatermark: boolean
+  taggedFriends: string[]
+  location: string
+  feeling: string
+  borderRadius: number
+  postBackground: PostBackgroundOption
 }) {
+  const bgColor = getPostBgColor(postBackground)
+  const br = borderRadius || 3
+
   return (
     <div style={{
       backgroundColor: '#ffffff',
       border: '1px solid #dddfe2',
-      borderRadius: '3px',
+      borderRadius: `${br}px`,
       boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
       overflow: 'hidden',
-      background: 'linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%)',
+      background: postBackground === 'white'
+        ? 'linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%)'
+        : bgColor,
       position: 'relative',
     }}>
-      {/* ─── Header: Avatar + Name + Timestamp ─── */}
+      {/* ─── Header: Avatar + Name + Timestamp + ... ─── */}
       <div style={{
         padding: '10px 12px 6px 12px',
         display: 'flex',
@@ -921,7 +1235,39 @@ function PostCard({
             </span>
           </div>
         </div>
+        {/* Post options "..." indicator */}
+        <div style={{
+          padding: '2px 4px', cursor: 'pointer', borderRadius: '2px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <DownDotsIcon size={16} color="#9197a3" />
+        </div>
       </div>
+
+      {/* ─── Feeling / Activity ─── */}
+      {feeling && (
+        <div style={{
+          padding: '2px 12px 4px 60px',
+          fontSize: '13px', lineHeight: '18px', color: '#6d7380',
+          fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px',
+        }}>
+          <SmileyIcon size={14} color="#9197a3" />
+          <span>{userName || 'Your Name'} is {feeling}</span>
+          <span style={{ color: '#9197a3' }}>·</span>
+        </div>
+      )}
+
+      {/* ─── Location / Check-in ─── */}
+      {location && (
+        <div style={{
+          padding: feeling ? '0 12px 4px 60px' : '2px 12px 4px 60px',
+          fontSize: '12px', lineHeight: '16px', color: '#9197a3',
+          display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
+        }}>
+          <PinIcon size={12} color="#9197a3" />
+          <span style={{ color: '#3b5998', fontWeight: 600 }}>{location}</span>
+        </div>
+      )}
 
       {/* ─── Post Content ─── */}
       {postContent && (
@@ -939,6 +1285,18 @@ function PostCard({
               {expanded ? ' See Less' : 'See More'}
             </span>
           )}
+          {/* Tagged Friends */}
+          {taggedFriends && taggedFriends.length > 0 && (
+            <div style={{ marginTop: '2px', lineHeight: '18px' }}>
+              <span style={{ color: '#6d7380' }}>with </span>
+              {taggedFriends.map((friend, i) => (
+                <span key={i}>
+                  <span style={{ color: '#3b5998', fontWeight: 600, cursor: 'pointer' }}>{friend}</span>
+                  {i < taggedFriends.length - 1 && <span style={{ color: '#6d7380' }}>, </span>}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -946,7 +1304,7 @@ function PostCard({
       {attachedImage && (
         <div style={{ margin: '0 10px 6px 10px' }}>
           <div style={{
-            backgroundColor: '#e5e5e5', borderRadius: '3px',
+            backgroundColor: '#e5e5e5', borderRadius: `${Math.min(br, 3)}px`,
             overflow: 'hidden', border: '1px solid #dddfe2',
           }}>
             <img src={attachedImage} alt="Post attachment" style={{
@@ -1034,35 +1392,31 @@ function PostCard({
               { name: 'Rachel Kim' },
             ].map((person) => (
               <div key={person.name} style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-                width: '52px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
               }}>
                 <div style={{
                   width: '32px', height: '32px', borderRadius: '50%',
-                  overflow: 'hidden', backgroundColor: '#dddfe2',
-                  border: '1px solid #e5e5e5',
+                  overflow: 'hidden', border: '2px solid #3b5998',
+                  backgroundColor: '#e9eaed',
                 }}>
-                  <img src={defaultAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={defaultAvatar} alt="" style={{
+                    width: '100%', height: '100%', objectFit: 'cover',
+                  }} />
                 </div>
-                <div style={{
-                  fontSize: '10px', color: '#3b5998', textAlign: 'center',
-                  fontWeight: 600, lineHeight: '12px',
+                <span style={{
+                  fontSize: '11px', color: '#3b5998', fontWeight: 600,
+                  textAlign: 'center', maxWidth: '70px',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  maxWidth: '52px',
                 }}>
                   {person.name}
-                </div>
+                </span>
               </div>
             ))}
             <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-              width: '52px', justifyContent: 'flex-end', paddingBottom: '14px',
+              fontSize: '11px', color: '#3b5998', cursor: 'pointer',
+              fontWeight: 600, alignSelf: 'center', marginLeft: '4px',
             }}>
-              <div style={{
-                fontSize: '10px', color: '#3b5998', cursor: 'pointer', fontWeight: 600,
-              }}>
-                See More
-              </div>
+              See More
             </div>
           </div>
         </div>
@@ -1071,204 +1425,217 @@ function PostCard({
       {/* ─── Engagement Stats ─── */}
       {hasEngagement && (
         <div style={{
-          padding: '7px 12px', margin: '0 10px',
+          padding: '8px 12px 4px 12px',
           borderTop: '1px solid #e5e5e5',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          fontSize: '12px', color: '#6d7380',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {hasLikes && (
-              <>
-                <FilledThumbsUp size={12} />
-                {topLikerName && likes > 1 && (
-                  <span style={{ fontWeight: 500 }}>
-                    {topLikerName} and {formatEngagement(likes - 1)} others
-                  </span>
-                )}
-                {topLikerName && likes <= 1 && (
-                  <span style={{ fontWeight: 500 }}>{topLikerName} likes this</span>
-                )}
-                {!topLikerName && (
-                  <span style={{ fontWeight: 500 }}>{formatEngagement(likes)}</span>
-                )}
-              </>
-            )}
+          <div style={{
+            width: '18px', height: '18px', borderRadius: '2px',
+            backgroundColor: '#3b5998', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <FilledThumbsUp size={10} />
           </div>
-          <div style={{ display: 'flex', gap: '14px' }}>
-            {hasComments && (
-              <span style={{ cursor: 'pointer', fontSize: '12px' }}>
-                {formatEngagement(comments)} {comments === 1 ? 'comment' : 'comments'}
-              </span>
-            )}
-            {hasShares && (
-              <span style={{ cursor: 'pointer', fontSize: '12px' }}>
-                {formatEngagement(shares)} {shares === 1 ? 'share' : 'shares'}
-              </span>
-            )}
-          </div>
+          <span style={{ fontSize: '12px', color: '#6d7380', fontWeight: 600 }}>
+            {formatEngagement(likes)}
+          </span>
+          {hasComments && (
+            <span style={{ fontSize: '12px', color: '#6d7380' }}>
+              &nbsp;·&nbsp;{formatEngagement(comments)} comments
+            </span>
+          )}
+          {hasShares && (
+            <span style={{ fontSize: '12px', color: '#6d7380' }}>
+              &nbsp;·&nbsp;{formatEngagement(shares)} shares
+            </span>
+          )}
+          {topLikerName && hasLikes && (
+            <span style={{ fontSize: '12px', color: '#6d7380' }}>
+              &nbsp;— {topLikerName} and {likes > 1 ? formatEngagement(likes - 1) : ''} others
+            </span>
+          )}
         </div>
       )}
 
-      <div style={{ margin: '0 10px', borderTop: '1px solid #e5e5e5' }} />
+      {/* ─── Thin separator between stats and action bar ─── */}
+      {hasEngagement && (
+        <div style={{
+          height: '1px', backgroundColor: '#e5e5e5', margin: '0 12px',
+        }} />
+      )}
 
-      {/* ─── Action Bar ─── */}
-      <div style={{ display: 'flex', padding: '2px 8px 4px 8px' }}>
-        {['Like', 'Comment', 'Share'].map(label => (
-          <button key={label} style={actionButtonStyle} onMouseOver={actionHoverOn} onMouseOut={actionHoverOff}>
-            {label === 'Like' && <ThumbsUpIcon size={13} color="#7f7f7f" />}
-            {label === 'Comment' && <CommentBubbleIcon size={13} color="#7f7f7f" />}
-            {label === 'Share' && <ShareArrowIcon size={13} color="#7f7f7f" />}
-            {label}
-          </button>
-        ))}
+      {/* ─── Action Bar: Like · Comment · Share ─── */}
+      <div style={{
+        display: 'flex',
+        borderTop: hasEngagement ? 'none' : '1px solid #e5e5e5',
+        margin: '0',
+        cursor: 'pointer',
+      }}>
+        {/* Like button with light blue gradient pill */}
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: '4px', padding: '6px 0', fontSize: '12px', fontWeight: 700,
+          color: '#7f7f7f',
+          background: 'linear-gradient(180deg, #f0f3f8 0%, #e8ecf1 100%)',
+          borderRight: '1px solid #e5e5e5',
+        }}>
+          <div style={{
+            backgroundColor: 'linear-gradient(180deg, #5b7bd5 0%, #3b5998 100%)',
+            borderRadius: '2px',
+            padding: '1px 3px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <FilledThumbsUp size={12} />
+          </div>
+          <span>Like</span>
+        </div>
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: '4px', padding: '6px 0', fontSize: '12px', fontWeight: 700,
+          color: '#7f7f7f', borderRight: '1px solid #e5e5e5',
+        }}>
+          <CommentBubbleIcon size={13} color="#7f7f7f" />
+          <span>Comment</span>
+        </div>
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: '4px', padding: '6px 0', fontSize: '12px', fontWeight: 700,
+          color: '#7f7f7f',
+        }}>
+          <ShareArrowIcon size={13} color="#7f7f7f" />
+          <span>Share</span>
+        </div>
       </div>
 
-      {/* ─── Comment Section ─── */}
-      {showCommentPreview && hasComments && commentsList.length > 0 && (
-        <>
-          <div style={{ margin: '0 10px', borderTop: '1px solid #e5e5e5' }} />
-          <div style={{ padding: '8px 12px', backgroundColor: '#fafbfc' }}>
-            {commentsList.map((c, idx) => (
-              <div key={c.id} style={{
-                display: 'flex', gap: '8px',
-                marginBottom: idx < commentsList.length - 1 ? '8px' : '0',
-              }}>
+      {/* ─── Comment Preview Section ─── */}
+      {showCommentPreview && commentsList.length > 0 && (
+        <div style={{
+          borderTop: '1px solid #e5e5e5',
+          padding: '8px 12px 4px 12px',
+        }}>
+          {/* "Most Relevant" dropdown */}
+          <div style={{
+            fontSize: '10px', fontWeight: 600, color: '#9197a3',
+            marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '3px',
+          }}>
+            <span>Most Relevant</span>
+            <svg viewBox="0 0 10 10" width="8" height="8" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 4l3 3 3-3" fill="none" stroke="#9197a3" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+
+          {/* "View all X comments" */}
+          {comments > commentsList.length && (
+            <div style={{
+              fontSize: '12px', fontWeight: 600, color: '#3b5998',
+              cursor: 'pointer', marginBottom: '6px',
+            }}>
+              View all {comments} comments
+            </div>
+          )}
+
+          {commentsList.map((comment) => (
+            <div key={comment.id} style={{
+              backgroundColor: '#f7f7f7',
+              borderRadius: '3px',
+              padding: '6px 8px',
+              marginBottom: '6px',
+            }}>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
                 <div style={{
                   width: '32px', height: '32px', minWidth: '32px',
                   borderRadius: '2px', overflow: 'hidden',
                   border: '1px solid #e5e5e5', backgroundColor: '#e9eaed',
                 }}>
-                  <img src={c.commenterAvatar || defaultAvatar} alt="" style={{
+                  <img src={comment.commenterAvatar || defaultAvatar} alt="" style={{
                     width: '100%', height: '100%', objectFit: 'cover', display: 'block',
                   }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    display: 'inline-block', backgroundColor: '#f0f2f5',
-                    borderRadius: '12px', padding: '6px 10px', maxWidth: '100%',
+                    backgroundColor: '#ebedf0',
+                    borderRadius: '12px',
+                    padding: '6px 10px',
                   }}>
-                    <div style={{
+                    <span style={{
                       fontSize: '12px', fontWeight: 700, color: '#3b5998',
-                      lineHeight: '14px',
+                      lineHeight: '16px',
                     }}>
-                      {c.commenterName || 'Commenter'}
-                    </div>
-                    <div style={{
+                      {comment.commenterName}
+                    </span>
+                    <span style={{
                       fontSize: '12px', color: '#1d2129',
-                      lineHeight: '16px', marginTop: '1px',
+                      lineHeight: '16px', marginLeft: '4px',
                     }}>
-                      {c.commentText || 'Great post!'}
-                    </div>
+                      {comment.commentText}
+                    </span>
                   </div>
                   <div style={{
-                    fontSize: '11px', color: '#9197a3', marginTop: '2px',
-                    paddingLeft: '10px', display: 'flex', gap: '10px', alignItems: 'center',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    marginTop: '2px', paddingLeft: '4px',
                   }}>
-                    <span style={{ cursor: 'pointer', fontWeight: 600 }}>Like</span>
-                    <span style={{ cursor: 'pointer' }}>Reply</span>
-                    <span>{c.commentTimestamp || '2 hrs'}</span>
-                    {c.commentLikes > 0 && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                        <span>·</span>
-                        <FilledThumbsUp size={9} />
-                        <span>{c.commentLikes}</span>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#3b5998', cursor: 'pointer' }}>
+                      Like
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#3b5998', cursor: 'pointer' }}>
+                      Reply
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#9197a3' }}>
+                      {comment.commentTimestamp}
+                    </span>
+                    {comment.commentLikes > 0 && (
+                      <span style={{
+                        fontSize: '11px', color: '#9197a3',
+                        display: 'flex', alignItems: 'center', gap: '2px',
+                      }}>
+                        <FilledThumbsUp size={10} />
+                        {comment.commentLikes}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-            ))}
-
-            {/* "See more comments" if comment count > commentsList length */}
-            {comments > commentsList.length && (
-              <div style={{
-                fontSize: '12px', fontWeight: 600, color: '#3b5998',
-                cursor: 'pointer', padding: '4px 0 4px 40px',
-              }}>
-                View all {comments} comments
-              </div>
-            )}
-
-            {/* "Write a comment" input */}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
-              <div style={{
-                width: '28px', height: '28px', minWidth: '28px',
-                borderRadius: '2px', overflow: 'hidden',
-                border: '1px solid #e5e5e5', backgroundColor: '#e9eaed',
-              }}>
-                <img src={profilePicture || defaultAvatar} alt="" style={{
-                  width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-                }} />
-              </div>
-              <div style={{
-                flex: 1, backgroundColor: '#ffffff', border: '1px solid #ccd0d5',
-                borderRadius: '14px', padding: '6px 12px', fontSize: '12px',
-                color: '#9197a3',
-              }}>
-                Write a comment...
-              </div>
             </div>
-          </div>
-        </>
+          ))}
+        </div>
       )}
 
-      {/* ─── "Write a comment" when no comment preview ─── */}
-      {!showCommentPreview && hasContent && (
-        <>
-          <div style={{ margin: '0 10px', borderTop: '1px solid #e5e5e5' }} />
-          <div style={{ padding: '8px 12px 10px 12px' }}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <div style={{
-                width: '28px', height: '28px', minWidth: '28px',
-                borderRadius: '2px', overflow: 'hidden',
-                border: '1px solid #e5e5e5', backgroundColor: '#e9eaed',
-              }}>
-                <img src={profilePicture || defaultAvatar} alt="" style={{
-                  width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-                }} />
-              </div>
-              <div style={{
-                flex: 1, backgroundColor: '#ffffff', border: '1px solid #ccd0d5',
-                borderRadius: '14px', padding: '6px 12px', fontSize: '12px',
-                color: '#9197a3',
-              }}>
-                Write a comment...
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      {/* ─── Write a Comment Input (improved) ─── */}
+      <div style={{
+        borderTop: showCommentPreview ? 'none' : '1px solid #e5e5e5',
+        padding: '10px 12px 10px 12px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+      }}>
+        <div style={{
+          width: '32px', height: '32px', minWidth: '32px',
+          borderRadius: '50%', overflow: 'hidden',
+          border: '1px solid #dddfe2', backgroundColor: '#e9eaed',
+        }}>
+          <img src={profilePicture || defaultAvatar} alt="" style={{
+            width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+          }} />
+        </div>
+        <div style={{
+          flex: 1, backgroundColor: '#f0f2f5', borderRadius: '18px',
+          padding: '7px 12px', fontSize: '13px', color: '#9197a3',
+          border: '1px solid #dddfe2',
+        }}>
+          Write a comment...
+        </div>
+      </div>
 
       {/* ─── Watermark ─── */}
       {showWatermark && (
         <div style={{
-          padding: '8px 12px',
-          textAlign: 'right',
-          fontSize: '10px',
-          color: '#999999',
-          fontStyle: 'italic',
+          position: 'absolute', bottom: '50px', right: '12px',
+          fontSize: '10px', color: '#999999', fontStyle: 'italic',
         }}>
           Generated with 2014 FB Post Generator
         </div>
       )}
     </div>
   )
-}
-
-// ──────────── Shared Styles ────────────
-
-const actionButtonStyle: React.CSSProperties = {
-  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-  gap: '5px', padding: '6px 0', border: 'none', backgroundColor: 'transparent',
-  color: '#7f7f7f', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-  borderRadius: '2px', letterSpacing: '0.01em', fontFamily: 'inherit',
-}
-
-function actionHoverOn(e: React.MouseEvent<HTMLButtonElement>) {
-  e.currentTarget.style.backgroundColor = '#f0f2f5'
-  e.currentTarget.style.color = '#4b4f56'
-}
-function actionHoverOff(e: React.MouseEvent<HTMLButtonElement>) {
-  e.currentTarget.style.backgroundColor = 'transparent'
-  e.currentTarget.style.color = '#7f7f7f'
 }

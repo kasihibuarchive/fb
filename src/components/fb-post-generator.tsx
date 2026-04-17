@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, defaultPostData, defaultComment, presets } from './fb-post-preview'
+import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type PostBackgroundOption, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +12,8 @@ import {
   ImagePlus, Download, User, Clock, Type, Heart, MessageSquare, Share2,
   X, Upload, Globe, Users, Lock, RotateCcw, Copy, ImageIcon, Link, MessageCircle,
   Sparkles, ChevronDown, ChevronUp, ExternalLink, FileImage, Monitor, Smartphone,
-  Plus, Trash2, Hash, Scissors, Timer, Droplets, Columns3, UsersRound, Stamp
+  Plus, Trash2, Hash, Scissors, Timer, Droplets, Columns3, UsersRound, Stamp,
+  MapPin, SmilePlus, UserPlus, Layers, Palette, Minus
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -43,9 +44,12 @@ export default function FBPostGenerator() {
     link: false,
     comment: false,
     advanced: false,
+    taggedFriends: false,
   })
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showTimestampPresets, setShowTimestampPresets] = useState(false)
+  const [newFriendName, setNewFriendName] = useState('')
+  const [customFeeling, setCustomFeeling] = useState('')
   const { toast } = useToast()
 
   const updateField = useCallback(<K extends keyof FBPostData>(field: K, value: FBPostData[K]) => {
@@ -58,15 +62,17 @@ export default function FBPostGenerator() {
 
   const applyPreset = useCallback((data: FBPostData) => {
     setPostData(data)
-    setExpandedSections({ link: data.sharedLink, comment: data.showCommentPreview, advanced: false })
+    setExpandedSections({ link: data.sharedLink, comment: data.showCommentPreview, advanced: false, taggedFriends: false })
     toast({ title: 'Preset applied!', description: 'Post template loaded successfully.' })
   }, [toast])
 
   const resetAll = useCallback(() => {
     setPostData(defaultPostData)
-    setExpandedSections({ link: false, comment: false, advanced: false })
+    setExpandedSections({ link: false, comment: false, advanced: false, taggedFriends: false })
     setShowEmojiPicker(false)
     setShowTimestampPresets(false)
+    setNewFriendName('')
+    setCustomFeeling('')
     if (profileInputRef.current) profileInputRef.current.value = ''
     if (imageInputRef.current) imageInputRef.current.value = ''
     if (linkImageInputRef.current) linkImageInputRef.current.value = ''
@@ -143,6 +149,19 @@ export default function FBPostGenerator() {
     ))
   }, [postData.commentsList, updateField])
 
+  // ── Tagged Friends ──
+  const addTaggedFriend = useCallback(() => {
+    const name = newFriendName.trim()
+    if (name && !postData.taggedFriends.includes(name)) {
+      updateField('taggedFriends', [...postData.taggedFriends, name])
+      setNewFriendName('')
+    }
+  }, [newFriendName, postData.taggedFriends, updateField])
+
+  const removeTaggedFriend = useCallback((name: string) => {
+    updateField('taggedFriends', postData.taggedFriends.filter(f => f !== name))
+  }, [postData.taggedFriends, updateField])
+
   // ── Timestamp preset ──
   const applyTimestampPreset = useCallback((value: string) => {
     updateField('timestamp', value)
@@ -213,6 +232,13 @@ export default function FBPostGenerator() {
 
   const fileInputStyle: React.CSSProperties = { borderColor: '#ccd0d5', fontSize: '12px' }
 
+  const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
+    borderColor: active ? '#3b5998' : '#e5e5e5',
+    backgroundColor: active ? '#e7f3ff' : '#fafbfc',
+    color: active ? '#3b5998' : '#8a8d91',
+    fontSize: '10px',
+  })
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f0f2f5' }}>
       {/* ──── Header ──── */}
@@ -244,7 +270,7 @@ export default function FBPostGenerator() {
           <div className="flex items-center gap-2">
             <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded font-medium"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
-              v4.0
+              v5.0
             </span>
           </div>
         </div>
@@ -402,15 +428,58 @@ export default function FBPostGenerator() {
                           <button key={opt.value} onClick={() => updateField('visibility', opt.value)}
                             className="flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded border text-xs font-medium transition-all"
                             style={{
-                              borderColor: postData.visibility === opt.value ? '#3b5998' : '#e5e5e5',
-                              backgroundColor: postData.visibility === opt.value ? '#e7f3ff' : '#fafbfc',
-                              color: postData.visibility === opt.value ? '#3b5998' : '#8a8d91',
+                              ...toggleBtnStyle(postData.visibility === opt.value),
                               fontSize: '9px',
                             }}>
                             {opt.icon} {opt.label}
                           </button>
                         ))}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold flex items-center gap-1"
+                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      <MapPin className="w-3 h-3" /> Location
+                      <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>(check-in)</span>
+                    </Label>
+                    <Input type="text" placeholder="e.g. Central Park, New York"
+                      value={postData.location} onChange={(e) => updateField('location', e.target.value)}
+                      className="text-sm h-7" style={fileInputStyle} />
+                  </div>
+
+                  {/* Feeling/Activity */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold flex items-center gap-1"
+                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      <SmilePlus className="w-3 h-3" /> Feeling/Activity
+                    </Label>
+                    <div className="flex gap-1.5">
+                      <select
+                        value={postData.feeling}
+                        onChange={(e) => updateField('feeling', e.target.value)}
+                        className="text-xs rounded border px-2 py-1.5 flex-1"
+                        style={{
+                          borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#4b4f56',
+                          fontSize: '11px', height: '28px',
+                        }}
+                      >
+                        <option value="">None</option>
+                        {feelingOptions.map(f => (
+                          <option key={f} value={f}>{f}</option>
+                        ))}
+                        <option value="custom">Custom...</option>
+                      </select>
+                      {postData.feeling === 'custom' && (
+                        <Input type="text" placeholder="feeling ..."
+                          value={customFeeling} onChange={(e) => {
+                            setCustomFeeling(e.target.value)
+                            updateField('feeling', `feeling ${e.target.value}`)
+                          }}
+                          className="text-xs h-7 flex-1" style={fileInputStyle} />
+                      )}
                     </div>
                   </div>
 
@@ -485,6 +554,53 @@ export default function FBPostGenerator() {
 
                   <Separator style={{ backgroundColor: '#eee' }} />
 
+                  {/* ─── Tagged Friends Section ─── */}
+                  <div>
+                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('taggedFriends')}>
+                      <div className="text-xs font-semibold flex items-center gap-1"
+                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        <UserPlus className="w-3 h-3" /> Tagged Friends
+                        {postData.taggedFriends.length > 0 && (
+                          <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>
+                            ({postData.taggedFriends.length})
+                          </span>
+                        )}
+                      </div>
+                      {expandedSections.taggedFriends ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
+                    </button>
+                    {expandedSections.taggedFriends && (
+                      <div className="space-y-2 pt-1">
+                        {postData.taggedFriends.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {postData.taggedFriends.map((friend) => (
+                              <span key={friend} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border"
+                                style={{ borderColor: '#dddfe2', backgroundColor: '#e7f3ff', color: '#3b5998', fontSize: '10px' }}>
+                                {friend}
+                                <button onClick={() => removeTaggedFriend(friend)} className="ml-0.5 hover:text-red-500">
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-1.5">
+                          <Input type="text" placeholder="Friend's name"
+                            value={newFriendName}
+                            onChange={(e) => setNewFriendName(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') addTaggedFriend() }}
+                            className="text-xs h-7 flex-1" style={fileInputStyle} />
+                          <button className="flex items-center justify-center gap-1 py-1 px-2 rounded border text-xs font-medium transition-all"
+                            style={toggleBtnStyle(false)}
+                            onClick={addTaggedFriend}>
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator style={{ backgroundColor: '#eee' }} />
+
                   {/* ─── Shared Link Section ─── */}
                   <div>
                     <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('link')}>
@@ -497,11 +613,8 @@ export default function FBPostGenerator() {
                     </button>
                     <div className="flex items-center gap-2 mb-1.5">
                       <button className="flex-1 flex items-center justify-center gap-1 py-1 rounded border text-xs font-medium transition-all"
-                        style={{
-                          borderColor: postData.sharedLink ? '#3b5998' : '#e5e5e5',
-                          backgroundColor: postData.sharedLink ? '#e7f3ff' : '#fafbfc',
-                          color: postData.sharedLink ? '#3b5998' : '#8a8d91', fontSize: '10px',
-                        }} onClick={() => updateField('sharedLink', !postData.sharedLink)}>
+                        style={toggleBtnStyle(postData.sharedLink)}
+                        onClick={() => updateField('sharedLink', !postData.sharedLink)}>
                         <ExternalLink className="w-3 h-3" />
                         {postData.sharedLink ? 'Link Enabled' : 'Enable Link'}
                       </button>
@@ -595,22 +708,19 @@ export default function FBPostGenerator() {
                     </button>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <button className="flex-1 flex items-center justify-center gap-1 py-1 rounded border text-xs font-medium transition-all"
-                        style={{
-                          borderColor: postData.showCommentPreview ? '#3b5998' : '#e5e5e5',
-                          backgroundColor: postData.showCommentPreview ? '#e7f3ff' : '#fafbfc',
-                          color: postData.showCommentPreview ? '#3b5998' : '#8a8d91', fontSize: '10px',
-                        }} onClick={() => updateField('showCommentPreview', !postData.showCommentPreview)}>
+                        style={toggleBtnStyle(postData.showCommentPreview)}
+                        onClick={() => updateField('showCommentPreview', !postData.showCommentPreview)}>
                         <MessageCircle className="w-3 h-3" />
                         {postData.showCommentPreview ? 'Comments Shown' : 'Show Comments'}
                       </button>
                       <button className="flex items-center justify-center gap-1 py-1 px-2 rounded border text-xs font-medium transition-all"
-                        style={{ borderColor: '#e5e5e5', backgroundColor: '#fafbfc', color: '#8a8d91', fontSize: '10px' }}
+                        style={toggleBtnStyle(false)}
                         onClick={addComment}>
                         <Plus className="w-3 h-3" /> Add
                       </button>
                     </div>
 
-                    {expandedSections.comment && postData.commentsList.map((c, idx) => (
+                    {expandedSections.comment && postData.commentsList.map((c) => (
                       <div key={c.id} className="border rounded p-2 mb-2" style={{
                         borderColor: '#e5e5e5', backgroundColor: '#fafbfc',
                       }}>
@@ -679,17 +789,11 @@ export default function FBPostGenerator() {
                             </span>
                           </div>
                           <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
-                            style={{
-                              borderColor: postData.showNavBar ? '#3b5998' : '#e5e5e5',
-                              backgroundColor: postData.showNavBar ? '#e7f3ff' : '#fafbfc',
-                              color: postData.showNavBar ? '#3b5998' : '#8a8d91', fontSize: '10px',
-                            }} onClick={() => updateField('showNavBar', !postData.showNavBar)}>
+                            style={toggleBtnStyle(postData.showNavBar)}
+                            onClick={() => updateField('showNavBar', !postData.showNavBar)}>
                             {postData.showNavBar ? 'On' : 'Off'}
                           </button>
                         </div>
-                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
-                          Adds the classic Facebook blue navigation bar at the top of the screenshot
-                        </p>
 
                         {/* Show Sidebars */}
                         <div className="flex items-center justify-between">
@@ -700,17 +804,11 @@ export default function FBPostGenerator() {
                             </span>
                           </div>
                           <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
-                            style={{
-                              borderColor: postData.showSidebars ? '#3b5998' : '#e5e5e5',
-                              backgroundColor: postData.showSidebars ? '#e7f3ff' : '#fafbfc',
-                              color: postData.showSidebars ? '#3b5998' : '#8a8d91', fontSize: '10px',
-                            }} onClick={() => updateField('showSidebars', !postData.showSidebars)}>
+                            style={toggleBtnStyle(postData.showSidebars)}
+                            onClick={() => updateField('showSidebars', !postData.showSidebars)}>
                             {postData.showSidebars ? 'On' : 'Off'}
                           </button>
                         </div>
-                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
-                          Adds left &amp; right sidebars (requires Nav Bar). Authentic 2014 layout with sidebar content
-                        </p>
 
                         {/* People Also Like */}
                         <div className="flex items-center justify-between">
@@ -721,19 +819,13 @@ export default function FBPostGenerator() {
                             </span>
                           </div>
                           <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
-                            style={{
-                              borderColor: postData.showPeopleAlsoLike ? '#3b5998' : '#e5e5e5',
-                              backgroundColor: postData.showPeopleAlsoLike ? '#e7f3ff' : '#fafbfc',
-                              color: postData.showPeopleAlsoLike ? '#3b5998' : '#8a8d91', fontSize: '10px',
-                            }} onClick={() => updateField('showPeopleAlsoLike', !postData.showPeopleAlsoLike)}>
+                            style={toggleBtnStyle(postData.showPeopleAlsoLike)}
+                            onClick={() => updateField('showPeopleAlsoLike', !postData.showPeopleAlsoLike)}>
                             {postData.showPeopleAlsoLike ? 'On' : 'Off'}
                           </button>
                         </div>
-                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
-                          Shows a &quot;People Also Like&quot; section below the post (requires 10+ likes)
-                        </p>
 
-                        {/* Show Watermark */}
+                        {/* Watermark */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Stamp className="w-3 h-3" style={{ color: '#3b5998' }} />
@@ -742,21 +834,13 @@ export default function FBPostGenerator() {
                             </span>
                           </div>
                           <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
-                            style={{
-                              borderColor: postData.showWatermark ? '#3b5998' : '#e5e5e5',
-                              backgroundColor: postData.showWatermark ? '#e7f3ff' : '#fafbfc',
-                              color: postData.showWatermark ? '#3b5998' : '#8a8d91', fontSize: '10px',
-                            }} onClick={() => updateField('showWatermark', !postData.showWatermark)}>
+                            style={toggleBtnStyle(postData.showWatermark)}
+                            onClick={() => updateField('showWatermark', !postData.showWatermark)}>
                             {postData.showWatermark ? 'On' : 'Off'}
                           </button>
                         </div>
-                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
-                          Adds a subtle watermark at the bottom of the post card
-                        </p>
 
-                        <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }} />
-
-                        {/* Highlight Hashtags */}
+                        {/* Hashtags */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Hash className="w-3 h-3" style={{ color: '#3b5998' }} />
@@ -765,11 +849,8 @@ export default function FBPostGenerator() {
                             </span>
                           </div>
                           <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
-                            style={{
-                              borderColor: postData.highlightHashtags ? '#3b5998' : '#e5e5e5',
-                              backgroundColor: postData.highlightHashtags ? '#e7f3ff' : '#fafbfc',
-                              color: postData.highlightHashtags ? '#3b5998' : '#8a8d91', fontSize: '10px',
-                            }} onClick={() => updateField('highlightHashtags', !postData.highlightHashtags)}>
+                            style={toggleBtnStyle(postData.highlightHashtags)}
+                            onClick={() => updateField('highlightHashtags', !postData.highlightHashtags)}>
                             {postData.highlightHashtags ? 'On' : 'Off'}
                           </button>
                         </div>
@@ -783,137 +864,204 @@ export default function FBPostGenerator() {
                             </span>
                           </div>
                           <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
-                            style={{
-                              borderColor: postData.truncateLongPosts ? '#3b5998' : '#e5e5e5',
-                              backgroundColor: postData.truncateLongPosts ? '#e7f3ff' : '#fafbfc',
-                              color: postData.truncateLongPosts ? '#3b5998' : '#8a8d91', fontSize: '10px',
-                            }} onClick={() => updateField('truncateLongPosts', !postData.truncateLongPosts)}>
+                            style={toggleBtnStyle(postData.truncateLongPosts)}
+                            onClick={() => updateField('truncateLongPosts', !postData.truncateLongPosts)}>
                             {postData.truncateLongPosts ? 'On' : 'Off'}
                           </button>
                         </div>
+
+                        {/* More Stories */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Layers className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              More Stories Below
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={toggleBtnStyle(postData.showMoreStories)}
+                            onClick={() => updateField('showMoreStories', !postData.showMoreStories)}>
+                            {postData.showMoreStories ? 'On' : 'Off'}
+                          </button>
+                        </div>
                         <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
-                          Shows &quot;See More&quot; for posts longer than 280 characters
+                          Shows mini post cards below the main post (like 2014 FB feed)
                         </p>
+
+                        {/* Border Radius Slider */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1.5">
+                              <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                                Post Border Radius
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '10px', color: '#9197a3' }}>{postData.borderRadius}px</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Minus className="w-3 h-3" style={{ color: '#9197a3' }} />
+                            <input
+                              type="range"
+                              min={0}
+                              max={12}
+                              value={postData.borderRadius}
+                              onChange={(e) => updateField('borderRadius', parseInt(e.target.value))}
+                              className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                              style={{
+                                WebkitAppearance: 'none',
+                                appearance: 'none',
+                                height: '4px',
+                                backgroundColor: '#dddfe2',
+                                borderRadius: '2px',
+                                outline: 'none',
+                              }}
+                            />
+                            <Plus className="w-3 h-3" style={{ color: '#9197a3' }} />
+                          </div>
+                        </div>
+
+                        {/* Background Pattern */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <Palette className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              Post Background
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {postBackgroundOptions.map((bg) => (
+                              <button
+                                key={bg.value}
+                                onClick={() => updateField('postBackground', bg.value)}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded border text-xs transition-all"
+                                style={{
+                                  borderColor: postData.postBackground === bg.value ? '#3b5998' : '#e5e5e5',
+                                  backgroundColor: postData.postBackground === bg.value ? '#e7f3ff' : '#fafbfc',
+                                  fontSize: '10px',
+                                  color: '#4b4f56',
+                                }}
+                              >
+                                <span
+                                  className="w-3 h-3 rounded-sm flex-shrink-0 border"
+                                  style={{ backgroundColor: bg.color, borderColor: '#dddfe2' }}
+                                />
+                                {bg.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
+
+              {/* ─── Export Section ─── */}
+              <Card className="border shadow-sm" style={{ borderColor: '#dddfe2' }}>
+                <CardContent className="px-4 py-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <Button
+                      className="text-xs gap-1 font-semibold"
+                      style={{
+                        backgroundColor: '#3b5998', color: '#fff', fontSize: '10px', height: '32px',
+                        borderColor: '#3b5998',
+                      }}
+                      onClick={() => handleDownload('png', 3)}
+                      disabled={isDownloading}
+                    >
+                      <Download className="w-3 h-3" /> PNG 3x
+                    </Button>
+                    <Button
+                      className="text-xs gap-1 font-semibold"
+                      style={{
+                        backgroundColor: '#ffffff', color: '#4b4f56', fontSize: '10px', height: '32px',
+                        borderColor: '#dddfe2',
+                      }}
+                      onClick={() => handleDownload('png', 2)}
+                      disabled={isDownloading}
+                    >
+                      <Download className="w-3 h-3" /> PNG 2x
+                    </Button>
+                    <Button
+                      className="text-xs gap-1 font-semibold"
+                      style={{
+                        backgroundColor: '#ffffff', color: '#4b4f56', fontSize: '10px', height: '32px',
+                        borderColor: '#dddfe2',
+                      }}
+                      onClick={() => handleDownload('jpeg', 3)}
+                      disabled={isDownloading}
+                    >
+                      <FileImage className="w-3 h-3" /> JPEG 3x
+                    </Button>
+                    <Button
+                      className="text-xs gap-1 font-semibold"
+                      style={{
+                        backgroundColor: '#ffffff', color: '#4b4f56', fontSize: '10px', height: '32px',
+                        borderColor: '#dddfe2',
+                      }}
+                      onClick={handleCopyToClipboard}
+                    >
+                      <Copy className="w-3 h-3" /> Copy Image
+                    </Button>
+                  </div>
+                  {isDownloading && (
+                    <div className="flex items-center justify-center gap-2 text-xs" style={{ color: '#9197a3' }}>
+                      <div className="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin"
+                        style={{ borderColor: '#3b5998 transparent transparent transparent' }} />
+                      Generating...
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          {/* ═══ Right Panel - Preview ═══ */}
+          {/* ═══ Right Panel (Preview) ═══ */}
           <div className="lg:col-span-7 xl:col-span-8">
             <div className="lg:sticky lg:top-16">
-              <Card className="border shadow-sm overflow-hidden" style={{ borderColor: '#dddfe2' }}>
-                <CardHeader className="pb-2.5 px-4 pt-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xs font-bold flex items-center gap-1.5"
-                      style={{ color: '#1d2129', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                      <svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="3" width="16" height="14" rx="1.5" fill="none" stroke="#3b5998" strokeWidth="1.5"/>
-                        <circle cx="7" cy="8" r="1.5" fill="#3b5998"/>
-                        <path d="M2 14l5-5 4 4 3-3 4 4" stroke="#3b5998" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      Live Preview
-                    </CardTitle>
-                    <div className="flex items-center gap-1.5">
-                      {postData.showNavBar && postData.showSidebars && (
-                        <span className="text-xs px-1.5 py-0.5 rounded font-medium"
-                          style={{ backgroundColor: '#2d4373', color: '#fff', fontSize: '9px' }}>
-                          <Columns3 className="w-2.5 h-2.5 inline mr-0.5" />Full Layout
-                        </span>
-                      )}
-                      {postData.showNavBar && !postData.showSidebars && (
-                        <span className="text-xs px-1.5 py-0.5 rounded font-medium"
-                          style={{ backgroundColor: '#3b5998', color: '#fff', fontSize: '9px' }}>
-                          <Monitor className="w-2.5 h-2.5 inline mr-0.5" />Full Screenshot
-                        </span>
-                      )}
-                      {postData.showWatermark && (
-                        <span className="text-xs px-1.5 py-0.5 rounded font-medium"
-                          style={{ backgroundColor: '#f0f2f5', color: '#4b4f56', fontSize: '9px' }}>
-                          <Stamp className="w-2.5 h-2.5 inline mr-0.5" />Watermark
-                        </span>
-                      )}
-                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                        style={{ backgroundColor: '#e7f3ff', color: '#3b5998', fontSize: '9px' }}>
-                        2014 Style
-                      </span>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="rounded-b-lg overflow-hidden">
-                    <FBPostPreview ref={previewRef} data={postData} />
-                  </div>
-
-                  {/* ─── Download Actions ─── */}
-                  <div className="p-3 border-t" style={{ backgroundColor: '#fafbfc', borderColor: '#e5e5e5' }}>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button onClick={() => handleDownload('png', 3)}
-                        disabled={isDownloading}
-                        className="flex-1 min-w-[120px] gap-1.5 text-xs font-semibold text-white"
-                        style={{
-                          backgroundColor: isDownloading ? '#8a9bc5' : '#3b5998',
-                          height: '36px', borderRadius: '2px',
-                        }}
-                        onMouseOver={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = '#2d4373' }}
-                        onMouseOut={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = '#3b5998' }}>
-                        {isDownloading ? (
-                          <><svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3"/>
-                            <path d="M12 2a10 10 0 019.95 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                          </svg> Generating...</>
-                        ) : (
-                          <><Download className="w-3.5 h-3.5" /> PNG (3x)</>
-                        )}
-                      </Button>
-                      <Button onClick={() => handleDownload('png', 2)} disabled={isDownloading}
-                        className="gap-1 text-xs font-semibold" style={{
-                          backgroundColor: '#fff', color: '#3b5998',
-                          border: '1px solid #3b5998', height: '36px', borderRadius: '2px',
-                        }}
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff' }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}>
-                        <Download className="w-3.5 h-3.5" /> PNG 2x
-                      </Button>
-                      <Button onClick={() => handleDownload('jpeg', 3)} disabled={isDownloading}
-                        className="gap-1 text-xs font-semibold" style={{
-                          backgroundColor: '#fff', color: '#3b5998',
-                          border: '1px solid #3b5998', height: '36px', borderRadius: '2px',
-                        }}
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff' }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}>
-                        <FileImage className="w-3.5 h-3.5" /> JPEG
-                      </Button>
-                      <Button onClick={handleCopyToClipboard} disabled={isDownloading}
-                        className="gap-1 text-xs font-semibold" style={{
-                          backgroundColor: '#fff', color: '#4b4f56',
-                          border: '1px solid #dddfe2', height: '36px', borderRadius: '2px',
-                        }}
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#f0f2f5' }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}>
-                        <Copy className="w-3.5 h-3.5" /> Copy
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {postData.showNavBar && (
+                    <span className="text-xs px-2 py-0.5 rounded font-medium border"
+                      style={{ backgroundColor: '#e7f3ff', color: '#3b5998', borderColor: '#a8c7fa', fontSize: '10px' }}>
+                      Full Layout
+                    </span>
+                  )}
+                  {postData.showWatermark && (
+                    <span className="text-xs px-2 py-0.5 rounded font-medium border"
+                      style={{ backgroundColor: '#fff7e0', color: '#8a6d3b', borderColor: '#f0d68a', fontSize: '10px' }}>
+                      Watermark
+                    </span>
+                  )}
+                  <span className="text-xs px-2 py-0.5 rounded font-medium border"
+                    style={{ backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '10px' }}>
+                    2014 Style
+                  </span>
+                </div>
+              </div>
+              <div style={{
+                borderRadius: '4px', overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                border: '1px solid #dddfe2',
+              }}>
+                <FBPostPreview ref={previewRef} data={postData} />
+              </div>
             </div>
           </div>
         </div>
       </main>
 
       {/* ──── Footer ──── */}
-      <footer className="mt-auto py-2.5 text-center border-t" style={{
-        backgroundColor: '#ffffff', borderColor: '#e5e5e5', color: '#8a8d91',
-        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: '10px',
+      <footer style={{
+        borderTop: '1px solid #dddfe2',
+        padding: '12px 20px',
+        textAlign: 'center',
+        fontSize: '11px',
+        color: '#9197a3',
+        backgroundColor: '#f0f2f5',
+        marginTop: 'auto',
       }}>
-        <p>2014 Facebook Post Generator &middot; For nostalgic purposes only</p>
-        <p className="mt-0.5" style={{ color: '#bcc0c4', fontSize: '9px' }}>
-          Facebook is a registered trademark of Meta Platforms, Inc.
-        </p>
+        2014 Facebook Post Generator &middot; For entertainment purposes only
       </footer>
     </div>
   )
