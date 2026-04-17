@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type PostBackgroundOption, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions } from './fb-post-preview'
+import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,7 +13,7 @@ import {
   X, Upload, Globe, Users, Lock, RotateCcw, Copy, ImageIcon, Link, MessageCircle,
   Sparkles, ChevronDown, ChevronUp, ExternalLink, FileImage, Monitor, Smartphone,
   Plus, Trash2, Hash, Scissors, Timer, Droplets, Columns3, UsersRound, Stamp,
-  MapPin, SmilePlus, UserPlus, Layers, Palette, Minus
+  MapPin, SmilePlus, UserPlus, Layers, Palette, Minus, ShieldCheck, ArrowDownNarrowWide
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -45,6 +45,7 @@ export default function FBPostGenerator() {
     comment: false,
     advanced: false,
     taggedFriends: false,
+    postExtras: false,
   })
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showTimestampPresets, setShowTimestampPresets] = useState(false)
@@ -62,13 +63,13 @@ export default function FBPostGenerator() {
 
   const applyPreset = useCallback((data: FBPostData) => {
     setPostData(data)
-    setExpandedSections({ link: data.sharedLink, comment: data.showCommentPreview, advanced: false, taggedFriends: false })
+    setExpandedSections({ link: data.sharedLink, comment: data.showCommentPreview, advanced: false, taggedFriends: false, postExtras: false })
     toast({ title: 'Preset applied!', description: 'Post template loaded successfully.' })
   }, [toast])
 
   const resetAll = useCallback(() => {
     setPostData(defaultPostData)
-    setExpandedSections({ link: false, comment: false, advanced: false, taggedFriends: false })
+    setExpandedSections({ link: false, comment: false, advanced: false, taggedFriends: false, postExtras: false })
     setShowEmojiPicker(false)
     setShowTimestampPresets(false)
     setNewFriendName('')
@@ -270,7 +271,7 @@ export default function FBPostGenerator() {
           <div className="flex items-center gap-2">
             <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded font-medium"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
-              v5.0
+              v6.0
             </span>
           </div>
         </div>
@@ -764,6 +765,90 @@ export default function FBPostGenerator() {
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  <Separator style={{ backgroundColor: '#eee' }} />
+
+                  {/* ─── Post Extras ─── */}
+                  <div>
+                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('postExtras')}>
+                      <div className="text-xs font-semibold flex items-center gap-1"
+                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        <Share2 className="w-3 h-3" /> Post Extras
+                      </div>
+                      {expandedSections.postExtras ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
+                    </button>
+
+                    {expandedSections.postExtras && (
+                      <div className="space-y-2.5 pt-1">
+                        {/* Shared By Text */}
+                        <div className="space-y-0.5">
+                          <Label className="text-xs font-semibold flex items-center gap-1"
+                            style={{ color: '#4b4f56', fontSize: '11px' }}>
+                            <Share2 className="w-3 h-3" /> Shared By Text
+                            <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>("X shared a link")</span>
+                          </Label>
+                          <Input type="text" placeholder="e.g. Tech Blog"
+                            value={postData.sharedByText} onChange={(e) => updateField('sharedByText', e.target.value)}
+                            className="text-sm h-7" style={fileInputStyle} />
+                        </div>
+
+                        {/* Is Edited */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              Show "Edited" Indicator
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={toggleBtnStyle(postData.isEdited)}
+                            onClick={() => updateField('isEdited', !postData.isEdited)}>
+                            {postData.isEdited ? 'On' : 'Off'}
+                          </button>
+                        </div>
+
+                        {/* Engagement Visibility */}
+                        <div className="space-y-0.5">
+                          <Label className="text-xs font-semibold flex items-center gap-1"
+                            style={{ color: '#4b4f56', fontSize: '11px' }}>
+                            <ShieldCheck className="w-3 h-3" /> Engagement Visibility
+                          </Label>
+                          <div className="flex gap-0.5">
+                            {engagementVisibilityOptions.map(opt => (
+                              <button key={opt.value} onClick={() => updateField('engagementVisibility', opt.value)}
+                                className="flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded border text-xs font-medium transition-all"
+                                style={{
+                                  ...toggleBtnStyle(postData.engagementVisibility === opt.value),
+                                  fontSize: '9px',
+                                }}>
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Comment Sort Order */}
+                        <div className="space-y-0.5">
+                          <Label className="text-xs font-semibold flex items-center gap-1"
+                            style={{ color: '#4b4f56', fontSize: '11px' }}>
+                            <ArrowDownNarrowWide className="w-3 h-3" /> Comment Sort Label
+                          </Label>
+                          <select
+                            value={postData.commentSortOrder}
+                            onChange={(e) => updateField('commentSortOrder', e.target.value as CommentSortOrder)}
+                            className="text-xs rounded border px-2 py-1.5 flex-1"
+                            style={{
+                              borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#4b4f56',
+                              fontSize: '11px', height: '28px',
+                            }}
+                          >
+                            {commentSortOptions.map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <Separator style={{ backgroundColor: '#eee' }} />

@@ -160,11 +160,13 @@ Stage Summary:
 - All QA tests pass
 
 ---
-## Project Status Assessment (Updated after v5.0)
+## Project Status Assessment (Updated after v6.0)
 
-**Current Status:** ✅ v5.0 — Major styling overhaul + 6 new features
+**Current Status:** ✅ v6.0 — Styling refinements + 7 new features
 
-**Completed Features (v1.0 through v5.0):**
+**Bug Fix:** Fixed duplicate `Share2` import in fb-post-generator.tsx that caused runtime crash.
+
+**Completed Features (v1.0 through v6.0):**
 
 *Core Post Editing:*
 - Profile picture upload with default avatar fallback
@@ -176,16 +178,24 @@ Stage Summary:
 - **Tagged Friends** — add/remove friends shown as "with Name1, Name2" in blue
 - **Location / Check-in** — pin icon + location text between timestamp and post content
 - **Feeling / Activity** — dropdown with 12 presets + custom; "is feeling happy" above post text
+- **Shared By banner** — "X shared a link" gray header bar on post card
+- **Edited indicator** — "· Edited" text next to timestamp
+- **Comment sort order** — Top/Newest/All Comments label selector
 - Character counter (63,206 limit)
 - Reset all fields
 
 *Post Preview Styling (2014 accuracy):*
 - **Update Status composer bar** — authentic 2014-style white box with avatar + "What's on your mind?"
-- **Post header "..." indicator** — three-dots icon next to timestamp
-- **Improved engagement section** — separator line + Like button gradient pill
+- **Create Post mini box** — compact feed widget with 32×32 avatar, placeholder, Photo/Video icons
+- **Post header "..." indicator** — horizontal three-dots icon next to timestamp
+- **Improved card shadow/border** — enhanced boxShadow + 2px thick top border (#e5e5e5)
+- **Reaction emoji circles** — 3 overlapping 18×18 circles (thumbs-up, heart, haha) before engagement text
+- **Improved engagement header** — "Liked by Name and X others" + "N comments · N shares" on same line
+- **Engagement privacy badge** — globe/lock icon + label at right of engagement section
 - **Better "Write a comment..." input** — 32×32 avatar, gray pill shape
-- **Improved comment bubbles** — #f7f7f7 background, "Most Relevant" text, bolder names
-- **Improved Sponsored ad** — advertiser avatar, close button, "Why am I seeing this?"
+- **Improved comment bubbles** — #f7f7f7 background, comment sort label, bolder names
+- **Improved Sponsored ad** — "Why am I seeing this?" + "Hide this ad" links
+- **Notification badge** — red "3" circle on nav bar bell icon
 - **Custom border radius** — slider (0-12px) for post card corners
 - **Post background color** — 6 options (white, cream, light-blue, light-green, light-yellow, light-pink)
 - **Hashtag highlighting** in blue
@@ -193,10 +203,10 @@ Stage Summary:
 - **Watermark toggle**: "Generated with 2014 FB Post Generator" italic watermark
 
 *Full Page Layout:*
-- **Facebook navigation bar** (authentic 2014 look with search, nav links, user menu)
+- **Facebook navigation bar** (authentic 2014 look with search, nav links, user menu, notification badge)
 - **Facebook wordmark** "facebook" text next to the "f" logo
-- **Facebook left sidebar** (220px): profile card, Favourites nav, Pages/Groups/Apps, Friends Online
-- **Facebook right sidebar** (249px): Sponsored ad, People You May Know, Trending topics
+- **Facebook left sidebar** (220px): profile card, Favourites nav, Pages/Groups/Apps, **Birthdays section**, Friends Online with status messages
+- **Facebook right sidebar** (249px): Sponsored ad (with disclaimer links), People You May Know, Trending topics
 - **3-column layout**: left sidebar | center feed | right sidebar
 - **Facebook footer** in screenshot mode
 - **"People Also Like" section** (requires 10+ likes)
@@ -220,9 +230,9 @@ Stage Summary:
 - Tailwind CSS + inline styles (all preview styles inline for html2canvas compatibility)
 - html2canvas for image export (configurable scale up to 3x)
 - Lucide React icons for editor UI only
-- 15+ custom inline SVG icons for 2014 Facebook elements (html2canvas compatible)
-- CommentData type, FBPostData with 25+ fields
-- FBPostData v5 fields: taggedFriends, location, feeling, showMoreStories, borderRadius, postBackground
+- 20+ custom inline SVG icons for 2014 Facebook elements (html2canvas compatible)
+- CommentData type, FBPostData with 30+ fields
+- FBPostData v6 fields: sharedByText, isEdited, engagementVisibility, commentSortOrder
 
 ---
 ## Potential Improvements for Next Phase
@@ -343,3 +353,52 @@ Stage Summary:
 - All new features backward-compatible (default to disabled/empty)
 - Updated presets with realistic new field data
 - Total inline SVG icons: 15 (all html2canvas compatible)
+
+---
+Task ID: 6-a
+Agent: Fullstack Developer
+Task: v6.0 styling refinements and new features
+
+Work Log:
+- Read worklog and all source files to understand v5.0 codebase
+- **Updated `FBPostData` type** with 5 new fields:
+  - `sharedByText: string` (default '') — shows "X shared a link" banner at top of post card
+  - `isEdited: boolean` (default false) — shows "Edited" text next to timestamp
+  - `engagementVisibility: EngagementVisibility` (default 'public') — privacy badge on engagement section
+  - `commentSortOrder: CommentSortOrder` (default 'top') — comment sort dropdown label
+- **Exported new types/constants**: `CommentSortOrder`, `EngagementVisibility`, `commentSortOptions`, `engagementVisibilityOptions`
+- **Major rewrite of `fb-post-preview.tsx`** with styling improvements:
+  1. **Notification badge on nav bar bell icon** — Red circle badge with "3" positioned top-right of bell icon (#e74c3c bg, white text, 9px font, 13x13 circle, 1.5px #3b5998 border)
+  2. **"Create Post" mini box in feed** — New `CreatePostMiniBox` component: 38px height, 1px #dddfe2 border, 3px radius, 32x32 round avatar, "What's on your mind?" placeholder, Photo/Video icon buttons on right; placed between UpdateStatusComposer and PostCard
+  3. **Improved post card shadow and border** — Enhanced boxShadow: `0 1px 2px rgba(0,0,0,0.1), 0 0 3px rgba(0,0,0,0.04)`; Thicker top border: `2px solid #e5e5e5` for classic card "thick top" look
+  4. **Reaction count mini emoji circles** — 3 overlapping 18x18 circles (thumbs-up #3b5998, heart #e74c3c, haha #f7b928) with inline SVG icons, -4px overlap, positioned before "Liked by Name and X others" text; new `MiniFilledHeart` and `MiniHahaFace` SVG components
+  5. **Improved engagement header styling** — "Liked by [topLikerName] and [N] others" format; "N comments · N shares" on same line; engagement visibility icon (globe/lock) at far right with label
+  6. **Timestamp area refinement** — Gap between avatar and name reduced from 8px to 7px; Three-dots icon changed to horizontal layout with #9197a3 color
+  7. **"Shared By" notification banner** — When `sharedByText` is set, shows gray banner (#f0f2f5) at top of post card with globe icon + "[name] shared a link" text
+  8. **"Edited" indicator** — When `isEdited` is true, shows "· Edited" text next to timestamp in #9197a3, font-size 10px
+  9. **Privacy badge on engagement** — When `engagementVisibility` is set, shows globe/lock icon + label ("Public"/"Friends"/"3 people") at right end of engagement section
+  10. **Comment sort dropdown** — "Most Relevant" replaced with `getCommentSortLabel(commentSortOrder)` — shows "Top Comments"/"Newest Comments"/"All Comments" with chevron
+  11. **Improved Sponsored ad section** — "Sponsored" text with dropdown arrow in ad header; "Why am I seeing this?" and "Hide this ad" links in 10px below ad content
+  12. **Friend status messages in left sidebar** — Friends Online section now shows unique status messages below each name (e.g., "🎉 Having fun at the beach", "Working from home", "On vacation 🌴") in #9197a3, 10px
+  13. **Birthdays section in left sidebar** — Between Apps and Friends Online; shows cake icon + "2 friends have birthdays today" in #3b5998 blue, 11px; new `CakeIcon` SVG component
+- **New inline SVG icons**: `MiniFilledHeart`, `MiniHahaFace`, `CakeIcon`, `SmallGlobeIcon`, `SmallLockIcon`
+- **Updated `fb-post-generator.tsx`**:
+  - Version bump v5.0 → v6.0
+  - **New "Post Extras" collapsible section** with 4 controls:
+    - Shared By Text input (e.g., "Tech Blog")
+    - Show "Edited" Indicator toggle (On/Off)
+    - Engagement Visibility selector (Public / Friends / Custom)
+    - Comment Sort Label dropdown (Top Comments / Newest Comments / All Comments)
+  - New imports: `Share2, ShieldCheck, ArrowDownNarrowWide` from lucide-react
+  - Updated `expandedSections` default to include 'postExtras' key
+  - Updated resetAll and applyPreset to handle new section state
+- ESLint: clean (0 errors, 0 warnings)
+- Dev server: compiled successfully
+
+Stage Summary:
+- **Version 6.0** — Styling refinements + 7 new features
+- 6 styling improvements: Notification badge, Create Post mini box, improved card shadow/border, reaction emoji circles, engagement header, timestamp refinement
+- 7 new features: Shared By banner, Edited indicator, engagement privacy badge, comment sort label, improved Sponsored ad, friend status messages, Birthdays sidebar section
+- All new fields backward-compatible with safe defaults
+- 5 new inline SVG icons (total 20+)
+- FBPostData now has 30+ fields

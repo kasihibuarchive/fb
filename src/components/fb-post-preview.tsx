@@ -21,6 +21,25 @@ function FilledThumbsUp({ size = 12 }: { size?: number }) {
   )
 }
 
+function MiniFilledHeart({ size = 10 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 14s-5.5-3.5-5.5-7.5C2.5 4.5 4 3 5.5 3c1 0 2 .5 2.5 1.5C8.5 3.5 9.5 3 10.5 3c1.5 0 3 1.5 3 3.5C13.5 10.5 8 14 8 14z" fill="#e74c3c"/>
+    </svg>
+  )
+}
+
+function MiniHahaFace({ size = 10 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="8" r="7" fill="#f7b928"/>
+      <circle cx="5.5" cy="6.5" r="1" fill="#fff"/>
+      <circle cx="10.5" cy="6.5" r="1" fill="#fff"/>
+      <path d="M5 10c0 0 1.5 2.5 3 2.5s3-2.5 3-2.5" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 function GlobeIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: string }) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
@@ -92,9 +111,9 @@ function SmileyIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: s
 function DownDotsIcon({ size = 16, color = '#9197a3' }: { size?: number; color?: string }) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
-      <circle cx="10" cy="4" r="1.5" fill={color}/>
+      <circle cx="4" cy="10" r="1.5" fill={color}/>
       <circle cx="10" cy="10" r="1.5" fill={color}/>
-      <circle cx="10" cy="16" r="1.5" fill={color}/>
+      <circle cx="16" cy="10" r="1.5" fill={color}/>
     </svg>
   )
 }
@@ -137,11 +156,46 @@ function CloseXIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: s
   )
 }
 
+function CakeIcon({ size = 12, color = '#3b5998' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="10" width="14" height="6" rx="1.5" fill={color} opacity="0.7"/>
+      <rect x="5" y="7" width="10" height="5" rx="1" fill={color} opacity="0.85"/>
+      <rect x="8" y="4" width="4" height="5" rx="1" fill={color}/>
+      <path d="M10 1.5v3" stroke={color} strokeWidth="1.2" strokeLinecap="round"/>
+      <circle cx="10" cy="1" r="1" fill={color}/>
+    </svg>
+  )
+}
+
+function SmallGlobeIcon({ size = 11, color = '#9197a3' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="10" cy="10" r="8" fill="none" stroke={color} strokeWidth="1.3"/>
+      <ellipse cx="10" cy="10" rx="3.5" ry="8" fill="none" stroke={color} strokeWidth="0.9"/>
+      <line x1="2" y1="10" x2="18" y2="10" stroke={color} strokeWidth="0.9"/>
+    </svg>
+  )
+}
+
+function SmallLockIcon({ size = 10, color = '#9197a3' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="10" width="10" height="7" rx="1.5" fill="none" stroke={color} strokeWidth="1.5"/>
+      <path d="M7.5 10V8a2.5 2.5 0 015 0v2" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 // ──────────── Types & Defaults ────────────
 
 export type VisibilityOption = 'public' | 'friends' | 'onlyme'
 
 export type PostBackgroundOption = 'white' | 'cream' | 'light-blue' | 'light-green' | 'light-yellow' | 'light-pink'
+
+export type CommentSortOrder = 'top' | 'newest' | 'all'
+
+export type EngagementVisibility = 'public' | 'friends' | 'custom'
 
 export interface CommentData {
   id: string
@@ -183,6 +237,11 @@ export interface FBPostData {
   showMoreStories: boolean
   borderRadius: number
   postBackground: PostBackgroundOption
+  // v6.0 new fields
+  sharedByText: string
+  isEdited: boolean
+  engagementVisibility: EngagementVisibility
+  commentSortOrder: CommentSortOrder
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -227,6 +286,11 @@ export const defaultPostData: FBPostData = {
   showMoreStories: false,
   borderRadius: 3,
   postBackground: 'white',
+  // v6.0 defaults
+  sharedByText: '',
+  isEdited: false,
+  engagementVisibility: 'public',
+  commentSortOrder: 'top',
 }
 
 export const feelingOptions = [
@@ -244,10 +308,28 @@ export const postBackgroundOptions: { value: PostBackgroundOption; label: string
   { value: 'light-pink', label: 'Light Pink', color: '#fce4ec' },
 ]
 
+export const commentSortOptions: { value: CommentSortOrder; label: string }[] = [
+  { value: 'top', label: 'Top Comments' },
+  { value: 'newest', label: 'Newest Comments' },
+  { value: 'all', label: 'All Comments' },
+]
+
+export const engagementVisibilityOptions: { value: EngagementVisibility; label: string }[] = [
+  { value: 'public', label: 'Public' },
+  { value: 'friends', label: 'Friends' },
+  { value: 'custom', label: 'Custom' },
+]
+
 const moreStoriesData = [
   { name: 'Emily Davis', avatar: defaultAvatar, text: 'Had the best brunch today with friends! 🥞', time: '3 hrs' },
   { name: 'Alex Turner', avatar: defaultAvatar, text: 'Just finished a 5K run! New personal best 🏃‍♂️', time: '5 hrs' },
   { name: 'Rachel Kim', avatar: defaultAvatar, text: 'New profile picture. Thoughts? 😊', time: '8 hrs' },
+]
+
+const friendOnlineData = [
+  { name: 'Amy Chen', status: '🎉 Having fun at the beach' },
+  { name: 'Brian K.', status: 'Working from home' },
+  { name: 'Maria S.', status: 'On vacation 🌴' },
 ]
 
 export const presets: { name: string; emoji: string; data: FBPostData }[] = [
@@ -449,6 +531,24 @@ function getPostBgColor(bg: PostBackgroundOption): string {
   }
 }
 
+function getCommentSortLabel(order: CommentSortOrder): string {
+  switch (order) {
+    case 'top': return 'Top Comments'
+    case 'newest': return 'Newest Comments'
+    case 'all': return 'All Comments'
+    default: return 'Most Relevant'
+  }
+}
+
+function getEngagementVisibilityLabel(vis: EngagementVisibility): string {
+  switch (vis) {
+    case 'public': return 'Public'
+    case 'friends': return 'Friends'
+    case 'custom': return '3 people'
+    default: return 'Public'
+  }
+}
+
 const TRUNCATE_LENGTH = 280
 
 // ──────────── Update Status Composer Bar ────────────
@@ -460,7 +560,7 @@ function UpdateStatusComposer({ userName, profilePicture }: { userName: string; 
       border: '1px solid #dddfe2',
       borderRadius: '5px',
       padding: '8px 10px',
-      marginBottom: '12px',
+      marginBottom: '10px',
     }}>
       <div style={{
         display: 'flex',
@@ -509,6 +609,49 @@ function UpdateStatusComposer({ userName, profilePicture }: { userName: string; 
           padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center',
         }}>
           <span style={{ fontSize: '11px', fontWeight: 600, color: '#5a7fb5' }}>Write Post</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ──────────── Create Post Mini Box ────────────
+
+function CreatePostMiniBox({ userName, profilePicture }: { userName: string; profilePicture: string }) {
+  return (
+    <div style={{
+      backgroundColor: '#ffffff',
+      border: '1px solid #dddfe2',
+      borderRadius: '3px',
+      height: '38px',
+      marginBottom: '12px',
+      padding: '0 10px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    }}>
+      <div style={{
+        width: '32px', height: '32px', minWidth: '32px',
+        borderRadius: '50%', overflow: 'hidden',
+        border: '1px solid #dddfe2', backgroundColor: '#e9eaed',
+      }}>
+        <img src={profilePicture || defaultAvatar} alt="" style={{
+          width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+        }} />
+      </div>
+      <div style={{
+        flex: 1, fontSize: '12px', color: '#9197a3',
+      }}>
+        What&apos;s on your mind?
+      </div>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer' }}>
+          <PhotoSmallIcon size={14} color="#5a7fb5" />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer' }}>
+          <VideoSmallIcon size={14} color="#5a7fb5" />
         </div>
       </div>
     </div>
@@ -603,7 +746,9 @@ function FacebookNavBar({ userName, profilePicture }: { userName: string; profil
             <path d="M2 5h16M2 10h16M2 15h16" stroke="#d8dfea" strokeWidth="2" strokeLinecap="round"/>
           </svg>
         </div>
+        {/* Bell icon with notification badge */}
         <div style={{
+          position: 'relative',
           width: '24px', height: '24px', backgroundColor: '#4e69a2', borderRadius: '2px',
           display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
         }}>
@@ -611,6 +756,27 @@ function FacebookNavBar({ userName, profilePicture }: { userName: string; profil
             <path d="M10 2a7 7 0 100 14 7 7 0 000-14z" fill="none" stroke="#d8dfea" strokeWidth="2"/>
             <path d="M10 6v5M10 13h.01" fill="none" stroke="#d8dfea" strokeWidth="2" strokeLinecap="round"/>
           </svg>
+          {/* Red notification badge */}
+          <div style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            width: '13px',
+            height: '13px',
+            minWidth: '13px',
+            borderRadius: '50%',
+            backgroundColor: '#e74c3c',
+            color: '#ffffff',
+            fontSize: '9px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: 1,
+            border: '1.5px solid #3b5998',
+          }}>
+            3
+          </div>
         </div>
       </div>
     </div>
@@ -720,11 +886,22 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
         </div>
       </div>
 
+      {/* Birthdays */}
+      <div style={{ padding: '6px 10px', borderBottom: '1px solid #e5e5e5' }}>
+        <div style={{
+          fontSize: '11px', color: '#3b5998', fontWeight: 700,
+          display: 'flex', alignItems: 'center', gap: '5px',
+        }}>
+          <CakeIcon size={12} color="#3b5998" />
+          2 friends have birthdays today
+        </div>
+      </div>
+
       {/* Friends Online */}
       <div style={{ padding: '6px 0 8px 0' }}>
         <div style={sectionHeaderStyle}>Friends Online</div>
-        {['Amy Chen', 'Brian K.', 'Maria S.'].map((name) => (
-          <div key={name} style={{
+        {friendOnlineData.map((friend) => (
+          <div key={friend.name} style={{
             padding: '3px 10px', display: 'flex', alignItems: 'center', gap: '6px',
           }}>
             <div style={{
@@ -739,7 +916,10 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
                 backgroundColor: '#47b63a', border: '1px solid #fff',
               }} />
             </div>
-            <span style={{ fontSize: '11px', color: '#1d2129' }}>{name}</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '11px', color: '#1d2129', lineHeight: '14px' }}>{friend.name}</span>
+              <span style={{ fontSize: '10px', color: '#9197a3', lineHeight: '13px' }}>{friend.status}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -794,9 +974,20 @@ function FacebookRightSidebar() {
             }}>
               <img src={defaultAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <div>
-              <div style={{ fontSize: '10px', fontWeight: 600, color: '#1d2129', lineHeight: '13px' }}>
-                TrendyApp
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: '#1d2129', lineHeight: '13px' }}>
+                  TrendyApp
+                </div>
+                <div style={{
+                  fontSize: '9px', color: '#3b5998', cursor: 'pointer', fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: '2px',
+                }}>
+                  <span>Sponsored</span>
+                  <svg viewBox="0 0 10 10" width="6" height="6" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 4l2 2 2-2" fill="none" stroke="#3b5998" strokeWidth="1.2" strokeLinecap="round"/>
+                  </svg>
+                </div>
               </div>
               <div style={{ fontSize: '9px', color: '#9197a3', lineHeight: '12px' }}>
                 Ad · example.com
@@ -810,11 +1001,14 @@ function FacebookRightSidebar() {
           }}>
             <span style={{ fontSize: '11px', color: '#9197a3', fontWeight: 600 }}>Ad Content</span>
           </div>
-          <div style={{ padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '9px', color: '#9197a3' }}>Sponsored</span>
-            <span style={{ fontSize: '9px', color: '#9197a3' }}>·</span>
-            <span style={{ fontSize: '9px', color: '#3b5998', cursor: 'pointer', textDecoration: 'underline' }}>
+          {/* Ad disclaimer links */}
+          <div style={{ padding: '4px 10px 6px 10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '10px', color: '#3b5998', cursor: 'pointer', textDecoration: 'none' }}>
               Why am I seeing this?
+            </span>
+            <span style={{ fontSize: '10px', color: '#9197a3' }}>·</span>
+            <span style={{ fontSize: '10px', color: '#9197a3', cursor: 'pointer' }}>
+              Hide this ad
             </span>
           </div>
         </div>
@@ -903,6 +1097,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
       showCommentPreview, commentsList, showNavBar, highlightHashtags, truncateLongPosts,
       showSidebars, showWatermark, showPeopleAlsoLike,
       taggedFriends, location, feeling, showMoreStories, borderRadius, postBackground,
+      sharedByText, isEdited, engagementVisibility, commentSortOrder,
     } = data
 
     const hasEngagement = likes > 0 || comments > 0 || shares > 0
@@ -962,6 +1157,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
               padding: '12px 0 24px 0',
             }}>
               <UpdateStatusComposer userName={userName} profilePicture={profilePicture} />
+              <CreatePostMiniBox userName={userName} profilePicture={profilePicture} />
               <PostCard
                 profilePicture={profilePicture}
                 userName={userName}
@@ -1000,6 +1196,10 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                 feeling={feeling}
                 borderRadius={borderRadius}
                 postBackground={postBackground}
+                sharedByText={sharedByText}
+                isEdited={isEdited}
+                engagementVisibility={engagementVisibility}
+                commentSortOrder={commentSortOrder}
               />
               {showMoreStories && <MoreStoriesSection />}
             </div>
@@ -1013,6 +1213,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
             maxWidth: '100%',
             padding: showNavBar ? '12px 0 24px 0' : '24px 20px',
           }}>
+            {showNavBar && <CreatePostMiniBox userName={userName} profilePicture={profilePicture} />}
             <PostCard
               profilePicture={profilePicture}
               userName={userName}
@@ -1051,6 +1252,10 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
               feeling={feeling}
               borderRadius={borderRadius}
               postBackground={postBackground}
+              sharedByText={sharedByText}
+              isEdited={isEdited}
+              engagementVisibility={engagementVisibility}
+              commentSortOrder={commentSortOrder}
             />
             {showMoreStories && <MoreStoriesSection />}
           </div>
@@ -1146,6 +1351,7 @@ function PostCard({
   truncateLongPosts, shouldTruncate, displayContent, expanded, setExpanded,
   showPeopleAlsoLike, showWatermark,
   taggedFriends, location, feeling, borderRadius, postBackground,
+  sharedByText, isEdited, engagementVisibility, commentSortOrder,
 }: {
   profilePicture: string
   userName: string
@@ -1184,6 +1390,10 @@ function PostCard({
   feeling: string
   borderRadius: number
   postBackground: PostBackgroundOption
+  sharedByText: string
+  isEdited: boolean
+  engagementVisibility: EngagementVisibility
+  commentSortOrder: CommentSortOrder
 }) {
   const bgColor = getPostBgColor(postBackground)
   const br = borderRadius || 3
@@ -1192,20 +1402,39 @@ function PostCard({
     <div style={{
       backgroundColor: '#ffffff',
       border: '1px solid #dddfe2',
+      borderTop: '2px solid #e5e5e5',
       borderRadius: `${br}px`,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.1), 0 0 3px rgba(0,0,0,0.04)',
       overflow: 'hidden',
       background: postBackground === 'white'
         ? 'linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%)'
         : bgColor,
       position: 'relative',
     }}>
+      {/* ─── Shared By Banner ─── */}
+      {sharedByText && (
+        <div style={{
+          backgroundColor: '#f0f2f5',
+          padding: '6px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          borderBottom: '1px solid #dddfe2',
+          fontSize: '11px',
+          color: '#6d7380',
+        }}>
+          <SmallGlobeIcon size={11} color="#6d7380" />
+          <span style={{ fontWeight: 600, color: '#6d7380' }}>{sharedByText}</span>
+          <span>shared a link</span>
+        </div>
+      )}
+
       {/* ─── Header: Avatar + Name + Timestamp + ... ─── */}
       <div style={{
         padding: '10px 12px 6px 12px',
         display: 'flex',
         alignItems: 'flex-start',
-        gap: '8px',
+        gap: '7px',
       }}>
         <div style={{
           width: '40px', height: '40px', minWidth: '40px',
@@ -1228,6 +1457,9 @@ function PostCard({
             marginTop: '1px', display: 'flex', alignItems: 'center', gap: '3px',
           }}>
             <span>{timestamp || 'Just now'}</span>
+            {isEdited && (
+              <span style={{ fontSize: '10px', color: '#9197a3' }}>· Edited</span>
+            )}
             <span style={{ fontSize: '9px' }}>·</span>
             <VisibilityIcon size={11} />
             <span style={{ fontSize: '10px', fontWeight: 600, color: '#9197a3' }}>
@@ -1235,7 +1467,7 @@ function PostCard({
             </span>
           </div>
         </div>
-        {/* Post options "..." indicator */}
+        {/* Post options "..." indicator — horizontal dots, more visible */}
         <div style={{
           padding: '2px 4px', cursor: 'pointer', borderRadius: '2px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1422,7 +1654,7 @@ function PostCard({
         </div>
       )}
 
-      {/* ─── Engagement Stats ─── */}
+      {/* ─── Engagement Stats (improved) ─── */}
       {hasEngagement && (
         <div style={{
           padding: '8px 12px 4px 12px',
@@ -1431,34 +1663,72 @@ function PostCard({
           alignItems: 'center',
           gap: '4px',
         }}>
-          <div style={{
-            width: '18px', height: '18px', borderRadius: '2px',
-            backgroundColor: '#3b5998', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <FilledThumbsUp size={10} />
-          </div>
+          {/* Reaction mini circles */}
+          {hasLikes && (
+            <div style={{ display: 'flex', alignItems: 'center', marginRight: '2px' }}>
+              <div style={{
+                width: '18px', height: '18px', borderRadius: '50%',
+                backgroundColor: '#3b5998', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1.5px solid #ffffff', zIndex: 3,
+                marginLeft: '0',
+              }}>
+                <FilledThumbsUp size={10} />
+              </div>
+              <div style={{
+                width: '18px', height: '18px', borderRadius: '50%',
+                backgroundColor: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1.5px solid #ffffff', zIndex: 2,
+                marginLeft: '-4px',
+              }}>
+                <MiniFilledHeart size={9} />
+              </div>
+              <div style={{
+                width: '18px', height: '18px', borderRadius: '50%',
+                backgroundColor: '#f7b928', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1.5px solid #ffffff', zIndex: 1,
+                marginLeft: '-4px',
+              }}>
+                <MiniHahaFace size={9} />
+              </div>
+            </div>
+          )}
           <span style={{ fontSize: '12px', color: '#6d7380', fontWeight: 600 }}>
-            {formatEngagement(likes)}
+            {topLikerName && hasLikes
+              ? `Liked by ${topLikerName} and ${likes > 1 ? formatEngagement(likes - 1) : ''} others`
+              : hasLikes
+                ? formatEngagement(likes)
+                : ''
+            }
           </span>
-          {hasComments && (
+          {/* Comments & shares + engagement visibility icon */}
+          {(hasComments || hasShares) && (
             <span style={{ fontSize: '12px', color: '#6d7380' }}>
-              &nbsp;·&nbsp;{formatEngagement(comments)} comments
+              {(topLikerName && hasLikes) && ' · '}
+              {hasComments && `${formatEngagement(comments)} comments`}
+              {hasComments && hasShares && ' · '}
+              {hasShares && `${formatEngagement(shares)} shares`}
             </span>
           )}
-          {hasShares && (
-            <span style={{ fontSize: '12px', color: '#6d7380' }}>
-              &nbsp;·&nbsp;{formatEngagement(shares)} shares
-            </span>
-          )}
-          {topLikerName && hasLikes && (
-            <span style={{ fontSize: '12px', color: '#6d7380' }}>
-              &nbsp;— {topLikerName} and {likes > 1 ? formatEngagement(likes - 1) : ''} others
-            </span>
-          )}
+          {/* Engagement visibility icon */}
+          <div style={{
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '2px',
+          }}>
+            {engagementVisibility === 'public' ? (
+              <SmallGlobeIcon size={10} color="#bcc0c4" />
+            ) : engagementVisibility === 'friends' ? (
+              <SmallLockIcon size={10} color="#bcc0c4" />
+            ) : (
+              <SmallLockIcon size={10} color="#bcc0c4" />
+            )}
+            <span style={{ fontSize: '10px', color: '#bcc0c4' }}>{getEngagementVisibilityLabel(engagementVisibility)}</span>
+          </div>
         </div>
       )}
 
-      {/* ─── Thin separator between stats and action bar ─── */}
+      {/* ─── Engagement bottom border ─── */}
       {hasEngagement && (
         <div style={{
           height: '1px', backgroundColor: '#e5e5e5', margin: '0 12px',
@@ -1481,7 +1751,6 @@ function PostCard({
           borderRight: '1px solid #e5e5e5',
         }}>
           <div style={{
-            backgroundColor: 'linear-gradient(180deg, #5b7bd5 0%, #3b5998 100%)',
             borderRadius: '2px',
             padding: '1px 3px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1514,12 +1783,12 @@ function PostCard({
           borderTop: '1px solid #e5e5e5',
           padding: '8px 12px 4px 12px',
         }}>
-          {/* "Most Relevant" dropdown */}
+          {/* Comment sort dropdown label */}
           <div style={{
             fontSize: '10px', fontWeight: 600, color: '#9197a3',
             marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '3px',
           }}>
-            <span>Most Relevant</span>
+            <span>{getCommentSortLabel(commentSortOrder)}</span>
             <svg viewBox="0 0 10 10" width="8" height="8" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 4l3 3 3-3" fill="none" stroke="#9197a3" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
