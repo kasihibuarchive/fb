@@ -1,6 +1,171 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
+Task ID: 15
+Agent: WebDevReview Cron Agent (Round 5)
+Task: v12.0 — New features, styling polish, new presets
+
+Work Log:
+- Read worklog and all source files to understand v11.0 codebase (2879 + 2260 lines)
+- QA with agent-browser: all 15 presets load correctly, zero errors, zero console warnings, dark mode works
+- **v12.0 Feature Implementation** (Task ID 13):
+  - Added `MilestoneIconType` type: `'trophy' | 'star' | 'heart' | 'flag'`
+  - Added `PostBgPattern` type: `'none' | 'dots' | 'lines' | 'diagonal' | 'gradient1' | 'gradient2'`
+  - 6 new FBPostData fields: `showReactionBar`, `showMilestone`, `milestoneText`, `milestoneIcon`, `postBgPattern`, `showActionEmoji`
+  - Exported `milestoneIconOptions` (4 icons) and `postBgPatternOptions` (6 patterns)
+  - 4 SVG milestone icon components: `TrophyIcon`, `StarIcon`, `HeartIcon`, `FlagIcon`
+  - Helper functions: `getMilestoneIcon()`, `getPatternStyle()`
+  - **Emoji Reaction Bar**: 6 emoji circles (👍❤️😂😮😢😡) between engagement and action bar, with active state highlighting based on reactionType
+  - **Milestone Banner**: warm gradient (#fff3e0 → #ffe0b2) with icon circle and contextual subtitle
+  - **Background Pattern Overlay**: 6 CSS patterns (dots, lines, diagonal, warm gradient, cool gradient) with pointer-events:none
+  - **Mini Emoji Row**: 8 emojis (😀😍😂😮😢😡👍👎) + chevron dropdown above Like/Comment/Share action bar
+  - Content wrapper with zIndex:1 to appear above pattern overlay
+  - 3 new presets: Game Night (🎮), Flashback Friday (📸), New Year's Eve (🎆)
+  - Editor controls: Reaction Bar toggle, Action Emoji toggle, Background Pattern grid selector, Milestone collapsible section with toggle/text/icon picker
+  - 4 new preview header badges: Reaction Bar, Milestone (with text), Pattern, Emoji Row
+  - All 6 new fields wired through FBPostPreview → PostCard at both call sites
+- **v12.0-b Styling Polish** (Task ID 14):
+  - Post content: increased bottom padding, subtle text-shadow
+  - Engagement stats: improved padding and color (#65676b)
+  - "Write a comment" input: inner shadow, larger placeholder font
+  - Link preview card: transition for box-shadow
+  - Left sidebar: larger nav font (12.5px), more section header spacing
+  - "People You May Know": more padding, larger Add Friend buttons
+  - Nav bar search: more rounded, better placeholder color
+  - Editor input focus: outline:none, smoother transitions
+  - Toggle buttons: active state box-shadow, more visible inactive color
+  - Preview panel header: top border, more padding
+  - Color input: more rounded (6px), hover scale effect
+- Full QA verification with agent-browser:
+  - All 18 presets load correctly without errors
+  - Dark mode toggle works with smooth transitions
+  - No console errors, no runtime errors
+  - ESLint: clean (0 errors)
+
+Stage Summary:
+- **Version 12.0** — 8 new features + 3 new presets + 12 styling improvements
+- 8 new features: Emoji reaction bar, Milestone/achievement banner (4 icon types), Background pattern overlay (6 patterns), Action emoji row, Milestone editor section, Background pattern selector, Reaction bar toggle, Action emoji toggle
+- 3 new presets: Game Night (🎮 with gradient pattern + reaction bar), Flashback Friday (📸 with dots + verified), New Year's Eve (🎆 with milestone star + warm gradient + full layout)
+- 12 styling improvements: post content shadow, engagement color, comment input shadow, link card transition, sidebar nav font, People section padding, search bar radius, input focus, toggle shadows, preview header border, color input roundness
+- Total preset count: 18
+- FBPostData now has 45+ fields
+- Total file sizes: ~3200 + ~2450 lines
+
+---
+## Project Status Assessment (Updated after v12.0)
+
+**Current Status:** ✅ v12.0 — Feature expansion + styling polish
+
+**Bug Status:** No bugs. All 18 presets load correctly. Zero runtime errors. Clean lint.
+
+**Completed Features (v1.0 through v12.0):**
+- 45+ editable post fields (name, timestamp, content, images, links, poll, life event, group, milestone, etc.)
+- 18 quick presets covering diverse post types
+- Full Facebook page layout (nav bar, left sidebar, right sidebar, footer)
+- Multiple photo grid layouts (auto, 2x2, 2x3)
+- 6 reaction types with custom SVG icons
+- Emoji reaction bar (6 emoji hover circles)
+- Mini emoji row above action bar (8 emojis + dropdown)
+- Milestone/achievement banner (4 icon types)
+- 6 background patterns (dots, lines, diagonal, warm/cool gradients)
+- Post text styling (bold, italic, large, custom color)
+- Verified badge, pinned post, sponsored, custom badge banners
+- Comment system with reply threads
+- Emoji picker, timestamp presets, date picker
+- Export: PNG 3x, PNG 2x, JPEG 3x, Copy to clipboard
+- Save/Load/Export/Import JSON
+- Shareable URL, keyboard shortcuts
+- Dark mode with smooth transitions, gradient background
+- Custom scrollbar, polished editor UI
+- Comprehensive micro-interactions and visual polish
+
+**Potential Improvements for Next Phase:**
+1. Drag-and-drop image upload (drag files onto photo area)
+2. Post templates gallery with visual browsing grid
+3. Shareable URL with encoded post data (deep link sharing)
+4. Undo/redo for editing (history stack)
+5. Additional post types: Event, Fundraiser, Album
+6. Animated GIF support in posts
+7. Comment translation mock feature
+8. Notification simulation (like count live-updating)
+
+---
+Task ID: 14
+Agent: Styling Expert
+Task: v12.0-b — Micro-interactions and visual polish
+
+Work Log:
+- Read both files fully to locate all 12 styling targets before making changes
+- **Preview Component (fb-post-preview.tsx) — 7 changes:**
+  1. **Post Content Area (line ~2585):** Increased bottom padding from 8px→10px when no images/link present; added subtle `textShadow: '0 0 1px rgba(0,0,0,0.01)'` for readability
+  2. **Engagement Section (line ~2752):** Changed padding from `'8px 12px 4px 12px'` to `'12px 12px 6px 12px'` for better alignment; changed engagement text color from `#6d7380` to `#65676b` (more refined)
+  3. **Comment Bubbles (line ~3017):** Confirmed border-radius already 12px and fontWeight already 700 — no changes needed
+  4. **"Write a comment" Input (line ~3148):** Added `boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)'` for depth; fontSize already 13px
+  5. **Link Preview Card (line ~2637):** Added `transition: 'box-shadow 0.2s ease'` for hover polish; cursor:pointer already present
+  6. **Left Sidebar (line ~1413, 1465):** Changed section header padding from `'6px 10px 3px 10px'` to `'8px 10px 3px 10px'`; changed nav item fontSize from 12px to 12.5px across all sidebar navigation items
+  7. **Right Sidebar "People You May Know" (line ~1652, 1685):** Added `paddingTop: '10px'` to section container; changed "Add Friend" button padding from `'3px 8px'` to `'4px 10px'`
+  8. **Nav Bar Search Input (line ~1301, 1309):** Changed search bar borderRadius from `'2px'` to `'3px'`; updated search icon/placeholder color from `#9197a3` to `#a8b0bc` for better 2014 accuracy
+- **Editor Component (fb-post-generator.tsx) — 4 changes:**
+  9. **Input Focus (line ~576):** Added `outline: 'none'` to fileInputStyle; added `focus:ring-0 focus:ring-offset-0` to Display Name Input and post content Textarea
+  10. **Toggle Button (line ~579-585):** Active state now has `boxShadow: '0 1px 3px rgba(59,89,152,0.15)'`; inactive color changed from `darkTextSecondary` to hardcoded `'#6d7380'` for consistency
+  11. **Preview Panel Header (line ~2298-2302):** Added `borderTop: '1px solid #eee'` (dark-mode-aware) and `paddingTop: '12px'` for visual separation
+  12. **Color Input (line ~1765-1775):** Changed borderRadius from `'4px'` to `'6px'`; wrapped in hover div with `scale(1.05)` transform for subtle interaction feedback
+- Fixed lint error: mismatched closing div tags around color picker wrapper
+- ESLint: clean (0 errors, 0 warnings)
+
+Stage Summary:
+- 12 styling improvements applied across both preview and editor components
+- All changes are CSS-only (inline styles or Tailwind classes) — no functionality altered
+- Preview component: 8 polish items (padding, text shadows, colors, transitions, font sizes)
+- Editor component: 4 polish items (focus styling, toggle shadows, panel borders, color picker rounding)
+- All preview styles remain inline for html2canvas compatibility
+
+---
+Task ID: 13
+Agent: Main Developer
+Task: v12.0 — Milestone banner, background patterns, reaction bar, action emoji row
+
+Work Log:
+- Read full fb-post-preview.tsx (2879 lines) to understand current v11.0 structure
+- **Added 2 new types**: `MilestoneIconType` ('trophy' | 'star' | 'heart' | 'flag'), `PostBgPattern` ('none' | 'dots' | 'lines' | 'diagonal' | 'gradient1' | 'gradient2')
+- **Added 6 new FBPostData fields** (v12.0):
+  - `showReactionBar: boolean` (default false) — shows emoji reaction bar (👍 ❤️ 😂 😮 😢 😡) between engagement and action bar
+  - `showMilestone: boolean` (default false) — adds milestone/achievement banner on post card
+  - `milestoneText: string` (default '') — milestone text (e.g., "100K Followers!")
+  - `milestoneIcon: MilestoneIconType` (default 'trophy') — icon type for milestone
+  - `postBgPattern: PostBgPattern` (default 'none') — background pattern overlay
+  - `showActionEmoji: boolean` (default false) — shows mini emoji row above Like/Comment/Share
+- **Exported new constants**: `milestoneIconOptions` (4 options), `postBgPatternOptions` (6 options)
+- **Added 4 SVG milestone icon components** (html2canvas compatible):
+  - `TrophyIcon` — trophy shape with gold color
+  - `StarMilestoneIcon` — 5-pointed star with gold color
+  - `HeartMilestoneIcon` — heart shape with red color
+  - `FlagMilestoneIcon` — flag shape with red color
+- **Added helper functions**:
+  - `getMilestoneIcon(type, size)` — returns appropriate SVG for milestone icon type
+  - `getPatternStyle(pattern)` — returns CSS properties for background pattern overlay
+- **Updated PostCard component** with 4 new UI sections:
+  1. **Background Pattern Overlay** — absolutely positioned div with zIndex:0 inside main card, with pointerEvents:'none'; content wrapper div with position:'relative', zIndex:1 to keep content above pattern
+  2. **Milestone/Achievement Banner** — warm gradient background (#fff3e0 → #ffe0b2), 40px icon circle, bold title text, contextual subtitle (Achievement Unlocked/Special Moment/Celebrating Together/Milestone Reached)
+  3. **Emoji Reaction Bar** — centered row of 6 emoji circles (👍❤️😂😮😢😡) with active state highlighting based on reactionType, scale animation on active
+  4. **Mini Emoji Row** — row of 8 emojis (😀😍😂😮😢😡👍👎) with chevron dropdown indicator, shown above action bar
+- **Added 3 new presets** (total now 18):
+  - **Game Night** (🎮) — Jake Thompson FIFA tournament with gradient2 pattern, reaction bar, action emoji row
+  - **Flashback Friday** (📸) — Emily Rodriguez Santorini travel post with dots pattern, verified badge, love reaction
+  - **New Year's Eve** (🎆) — Times Square Official countdown with milestone star banner, warm gradient, full layout
+- **Wired new fields** through FBPostPreview → PostCard at both call sites (sidebar + single-column)
+- Updated defaultPostData with all v12.0 defaults
+- ESLint: clean (0 errors, 0 warnings)
+- Dev server: compiled successfully, no errors
+- File grew from 2879 → 3208 lines (+329 lines)
+
+Stage Summary:
+- **Version 12.0** — 6 new fields, 4 new SVG components, 4 new UI sections, 3 new presets
+- Total preset count: 18 (15 existing + 3 new)
+- FBPostData now has 45+ fields
+- All changes backward-compatible with v11.0 (new fields default to disabled/empty)
+
+---
 Task ID: 12
 Agent: WebDevReview Cron Agent (Round 4)
 Task: v11.0 — Feature expansion, styling polish, new presets

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions } from './fb-post-preview'
+import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, type MilestoneIconType, type PostBgPattern, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions, milestoneIconOptions, postBgPatternOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -64,6 +64,7 @@ export default function FBPostGenerator() {
     lifeEvent: false,
     poll: false,
     savedPosts: false,
+    milestone: false,
   })
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showTimestampPresets, setShowTimestampPresets] = useState(false)
@@ -81,6 +82,12 @@ export default function FBPostGenerator() {
   const [postTextColor, setPostTextColor] = useState('')
   const [imageGridLayout, setImageGridLayout] = useState<'auto' | 'grid2x2' | 'grid2x3'>('auto')
   const [showVerifiedBadge, setShowVerifiedBadge] = useState(false)
+  const [showReactionBar, setShowReactionBar] = useState(false)
+  const [showMilestone, setShowMilestone] = useState(false)
+  const [milestoneText, setMilestoneText] = useState('')
+  const [milestoneIcon, setMilestoneIcon] = useState<MilestoneIconType>('trophy')
+  const [postBgPattern, setPostBgPattern] = useState<PostBgPattern>('none')
+  const [showActionEmoji, setShowActionEmoji] = useState(false)
   const { toast } = useToast()
 
   // ── Initialize from localStorage ──
@@ -120,11 +127,17 @@ export default function FBPostGenerator() {
     setPostTextColor(data.postTextColor || '')
     setImageGridLayout(data.imageGridLayout || 'auto')
     setShowVerifiedBadge(data.showVerifiedBadge || false)
+    setShowReactionBar(data.showReactionBar || false)
+    setShowMilestone(data.showMilestone || false)
+    setMilestoneText(data.milestoneText || '')
+    setMilestoneIcon(data.milestoneIcon || 'trophy')
+    setPostBgPattern(data.postBgPattern || 'none')
+    setShowActionEmoji(data.showActionEmoji || false)
     setExpandedSections({
       link: data.sharedLink, comment: data.showCommentPreview, advanced: false,
       taggedFriends: false, postExtras: false, groupPost: !!data.groupPostName,
       lifeEvent: data.postType === 'lifeevent', poll: data.postType === 'poll',
-      savedPosts: false,
+      savedPosts: false, milestone: false,
     })
     toast({ title: 'Preset applied!', description: 'Post template loaded successfully.' })
   }, [toast])
@@ -136,7 +149,7 @@ export default function FBPostGenerator() {
       return
     }
     setPostData(defaultPostData)
-    setExpandedSections({ link: false, comment: false, advanced: false, taggedFriends: false, postExtras: false, groupPost: false, lifeEvent: false, poll: false, savedPosts: false })
+    setExpandedSections({ link: false, comment: false, advanced: false, taggedFriends: false, postExtras: false, groupPost: false, lifeEvent: false, poll: false, savedPosts: false, milestone: false })
     setShowEmojiPicker(false)
     setShowTimestampPresets(false)
     setShowDatePicker(false)
@@ -148,6 +161,12 @@ export default function FBPostGenerator() {
     setPostTextColor('')
     setImageGridLayout('auto')
     setShowVerifiedBadge(false)
+    setShowReactionBar(false)
+    setShowMilestone(false)
+    setMilestoneText('')
+    setMilestoneIcon('trophy')
+    setPostBgPattern('none')
+    setShowActionEmoji(false)
     if (profileInputRef.current) profileInputRef.current.value = ''
     if (imageInputRef.current) imageInputRef.current.value = ''
     if (multiImageInputRef.current) multiImageInputRef.current.value = ''
@@ -164,13 +183,13 @@ export default function FBPostGenerator() {
     const existing = savedPosts.filter(p => !p.name.startsWith('Recent'))
     // Add current as recent
     const now = Date.now()
-    autoRecent.unshift({ name: `Recent - ${new Date(now).toLocaleTimeString()}`, data: { ...postData, attachedImage: '' }, timestamp: now })
+    autoRecent.unshift({ name: `Recent - ${new Date(now).toLocaleTimeString()}`, data: { ...postData, attachedImage: '', showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji }, timestamp: now })
     // Keep only 3 recent
     const allRecent = [autoRecent[0], ...savedPosts.filter(p => p.name.startsWith('Recent')).slice(0, 2)]
     const combined = [...allRecent, ...existing].slice(0, 20)
     setSavedPosts(combined)
     toast({ title: 'Post saved!', description: 'Saved to your collection.' })
-  }, [postData, savedPosts, toast])
+  }, [postData, savedPosts, toast, showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji])
 
   const loadSavedPost = useCallback((post: SavedPost) => {
     setPostData(post.data)
@@ -178,12 +197,18 @@ export default function FBPostGenerator() {
       link: post.data.sharedLink, comment: post.data.showCommentPreview, advanced: false,
       taggedFriends: false, postExtras: false, groupPost: !!post.data.groupPostName,
       lifeEvent: post.data.postType === 'lifeevent', poll: post.data.postType === 'poll',
-      savedPosts: true,
+      savedPosts: true, milestone: false,
     })
     setReactionType(post.data.reactionType || 'like')
     setPostTextColor(post.data.postTextColor || '')
     setImageGridLayout(post.data.imageGridLayout || 'auto')
     setShowVerifiedBadge(post.data.showVerifiedBadge || false)
+    setShowReactionBar(post.data.showReactionBar || false)
+    setShowMilestone(post.data.showMilestone || false)
+    setMilestoneText(post.data.milestoneText || '')
+    setMilestoneIcon(post.data.milestoneIcon || 'trophy')
+    setPostBgPattern(post.data.postBgPattern || 'none')
+    setShowActionEmoji(post.data.showActionEmoji || false)
     toast({ title: 'Post loaded', description: `"${post.name}" applied.` })
   }, [toast])
 
@@ -530,6 +555,10 @@ export default function FBPostGenerator() {
     postData.borderRadius !== 3,
     postData.postBackground !== 'white',
     postData.textStyle !== 'normal',
+    showReactionBar,
+    showMilestone,
+    postBgPattern !== 'none',
+    showActionEmoji,
   ].filter(Boolean).length
 
   const isDark = darkMode
@@ -544,14 +573,15 @@ export default function FBPostGenerator() {
   const darkLabelColor = isDark ? '#c0c0d8' : '#4b4f56'
   const darkDropdownBg = isDark ? '#252540' : '#ffffff'
   const darkDropdownHover = isDark ? '#3a3a5c' : '#e7f3ff'
-  const fileInputStyle: React.CSSProperties = { borderColor: darkInputBorder, fontSize: '12px', backgroundColor: darkInputBg, color: darkText, transition: 'border-color 0.2s ease, box-shadow 0.2s ease' }
+  const fileInputStyle: React.CSSProperties = { borderColor: darkInputBorder, fontSize: '12px', backgroundColor: darkInputBg, color: darkText, transition: 'border-color 0.2s ease, box-shadow 0.2s ease', outline: 'none' }
   const fileInputFocusStyle = isDark ? { boxShadow: '0 0 0 2px rgba(66,103,178,0.3)', borderColor: '#4267B2' } : {}
 
   const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
     borderColor: active ? '#3b5998' : darkInputBorder,
     backgroundColor: active ? '#e7f3ff' : darkInputBg,
-    color: active ? '#3b5998' : darkTextSecondary,
+    color: active ? '#3b5998' : '#6d7380',
     fontSize: '10px',
+    boxShadow: active ? '0 1px 3px rgba(59,89,152,0.15)' : 'none',
   })
 
   // Drag-and-drop handlers
@@ -704,7 +734,7 @@ export default function FBPostGenerator() {
                 padding: '2px 8px',
                 color: 'rgba(255,255,255,0.8)',
               }}>
-              v11.0
+              v12.0
             </span>
           </div>
         </div>
@@ -872,7 +902,7 @@ export default function FBPostGenerator() {
                     </Label>
                     <Input type="text" placeholder="Enter Facebook name"
                       value={postData.userName} onChange={(e) => updateField('userName', e.target.value)}
-                      className="text-sm h-8" style={fileInputStyle} />
+                      className="text-sm h-8 focus:ring-0 focus:ring-offset-0" style={fileInputStyle} />
                   </div>
 
                   {/* Timestamp + Visibility */}
@@ -1105,7 +1135,7 @@ export default function FBPostGenerator() {
                     </div>
                     <Textarea placeholder="What's on your mind?"
                       value={postData.postContent} onChange={(e) => updateField('postContent', e.target.value)}
-                      rows={4} className="text-sm resize-none" style={{ ...fileInputStyle, fontSize: '13px', lineHeight: '1.5' }} />
+                      rows={4} className="text-sm resize-none focus:ring-0 focus:ring-offset-0" style={{ ...fileInputStyle, fontSize: '13px', lineHeight: '1.5' }} />
                   </div>
 
                   {/* Attached Photos (Multi) */}
@@ -1733,12 +1763,16 @@ export default function FBPostGenerator() {
                             Text Color
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', transition: 'transform 0.15s ease', cursor: 'pointer' }}
+                            onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.05)' }}
+                            onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)' }}>
                             <input
                               type="color"
                               value={postTextColor || '#1d2129'}
                               onChange={e => setPostTextColor(e.target.value)}
-                              style={{ width: '28px', height: '28px', border: `1px solid ${darkInputBorder}`, borderRadius: '4px', cursor: 'pointer', padding: '0', backgroundColor: 'transparent' }}
+                              style={{ width: '28px', height: '28px', border: `1px solid ${darkInputBorder}`, borderRadius: '6px', cursor: 'pointer', padding: '0', backgroundColor: 'transparent' }}
                             />
+                          </div>
                             <input
                               type="text"
                               value={postTextColor}
@@ -1751,6 +1785,37 @@ export default function FBPostGenerator() {
                               <button onClick={() => setPostTextColor('')} style={{ fontSize: '11px', color: '#9197a3', cursor: 'pointer', background: 'none', border: 'none' }}>✕</button>
                             )}
                           </div>
+                        </div>
+
+                        {/* Reaction Bar */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span style={{ fontSize: '12px' }}>👍</span>
+                            <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>
+                              Reaction Bar
+                            </span>
+                            <span style={{ color: darkTextSecondary, fontWeight: 400, fontSize: '10px' }}>(Like ❤️😂😮😢😡)</span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={toggleBtnStyle(showReactionBar)}
+                            onClick={() => setShowReactionBar(!showReactionBar)}>
+                            {showReactionBar ? 'On' : 'Off'}
+                          </button>
+                        </div>
+
+                        {/* Action Emoji Row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>
+                              😀 Emoji Row
+                            </span>
+                            <span style={{ color: darkTextSecondary, fontWeight: 400, fontSize: '10px' }}>(above Like/Comment/Share)</span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={toggleBtnStyle(showActionEmoji)}
+                            onClick={() => setShowActionEmoji(!showActionEmoji)}>
+                            {showActionEmoji ? 'On' : 'Off'}
+                          </button>
                         </div>
                       </div>
                     )}
@@ -2049,6 +2114,106 @@ export default function FBPostGenerator() {
                             <option value="grid2x3">2×3 Grid</option>
                           </select>
                         </div>
+
+                        {/* Post Background Pattern */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <Layers className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>
+                              Background Pattern
+                            </span>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                            {postBgPatternOptions.map(opt => (
+                              <button
+                                key={opt.value}
+                                onClick={() => setPostBgPattern(opt.value as PostBgPattern)}
+                                style={{
+                                  padding: '4px 6px',
+                                  borderRadius: '4px',
+                                  border: postBgPattern === opt.value ? '2px solid #3b5998' : '1px solid #dddfe2',
+                                  backgroundColor: postBgPattern === opt.value ? '#e8f0fe' : (isDark ? '#2a2a3e' : '#fff'),
+                                  color: darkLabelColor,
+                                  fontSize: '10px',
+                                  cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: '4px',
+                                  transition: 'all 0.15s ease',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <span>{opt.preview}</span>
+                                <span>{opt.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* ─── Milestone / Achievement Section ─── */}
+                        <div>
+                          <button className="w-full flex items-center justify-between py-1"
+                            style={{ borderLeft: expandedSections.milestone ? '2px solid #f7b928' : '2px solid transparent', paddingLeft: expandedSections.milestone ? '8px' : '10px', transition: 'border-color 0.2s ease, padding-left 0.2s ease' }}
+                            onClick={() => toggleSection('milestone')}>
+                            <div className="text-xs font-semibold flex items-center gap-1"
+                              style={{ color: darkLabelColor, fontSize: '11px' }}>
+                              🏆 Milestone
+                              {showMilestone && (
+                                <span className="px-1.5 py-0 rounded text-xs font-bold" style={{ backgroundColor: '#fff3e0', color: '#e65100', fontSize: '9px' }}>ON</span>
+                              )}
+                            </div>
+                            <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.milestone ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                          </button>
+                          {expandedSections.milestone && (
+                            <div className="space-y-2 pt-1" style={{ paddingLeft: '10px' }}>
+                              {/* Milestone Toggle */}
+                              <div className="flex items-center justify-between">
+                                <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>Show Milestone</span>
+                                <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                                  style={toggleBtnStyle(showMilestone)}
+                                  onClick={() => setShowMilestone(!showMilestone)}>
+                                  {showMilestone ? 'On' : 'Off'}
+                                </button>
+                              </div>
+                              {/* Milestone Text */}
+                              {showMilestone && (
+                                <>
+                                  <div className="space-y-0.5">
+                                    <Label className="text-xs" style={{ color: darkLabelColor, fontSize: '11px' }}>
+                                      Milestone Text
+                                    </Label>
+                                    <Input type="text" placeholder="e.g. 100K Followers!, 5 Years Together"
+                                      value={milestoneText} onChange={e => setMilestoneText(e.target.value)}
+                                      className="text-sm h-7" style={fileInputStyle} />
+                                  </div>
+                                  {/* Milestone Icon */}
+                                  <div className="space-y-0.5">
+                                    <Label className="text-xs" style={{ color: darkLabelColor, fontSize: '11px' }}>
+                                      Icon
+                                    </Label>
+                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                      {milestoneIconOptions.map(opt => (
+                                        <button
+                                          key={opt.value}
+                                          onClick={() => setMilestoneIcon(opt.value as MilestoneIconType)}
+                                          style={{
+                                            fontSize: '16px', width: '34px', height: '34px',
+                                            borderRadius: '6px',
+                                            border: milestoneIcon === opt.value ? '2px solid #f7b928' : '2px solid transparent',
+                                            backgroundColor: milestoneIcon === opt.value ? 'rgba(247,185,40,0.1)' : 'transparent',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            transition: 'all 0.15s ease',
+                                          }}
+                                          title={opt.label}
+                                        >
+                                          {opt.icon}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2135,7 +2300,10 @@ export default function FBPostGenerator() {
           {/* ═══ Right Panel (Preview) ═══ */}
           <div className="lg:col-span-7 xl:col-span-8">
             <div className="lg:sticky lg:top-16">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex items-center justify-between" style={{
+                borderTop: `1px solid ${isDark ? '#3a3a5c' : '#eee'}`,
+                paddingTop: '12px',
+              }}>
                 <div className="flex items-center gap-2 flex-wrap">
                   {postData.showNavBar && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
@@ -2209,6 +2377,14 @@ export default function FBPostGenerator() {
                     style={{ backgroundColor: '#fce4ec', color: '#c62828', borderColor: '#f48fb1', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>{reactionTypeOptions.find(r => r.value === reactionType)?.icon} {reactionTypeOptions.find(r => r.value === reactionType)?.label}</span>}
                   {postTextColor && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
                     style={{ backgroundColor: '#f3e5f5', color: '#7b1fa2', borderColor: '#ce93d8', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🎨 Custom Color</span>}
+                  {showReactionBar && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                    style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', borderColor: '#a5d6a7', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>👍 Reaction Bar</span>}
+                  {showMilestone && milestoneText && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                    style={{ backgroundColor: '#fff3e0', color: '#e65100', borderColor: '#ffcc80', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🏆 {milestoneText}</span>}
+                  {postBgPattern !== 'none' && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                    style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#93c5fd', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🎨 Pattern</span>}
+                  {showActionEmoji && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                    style={{ backgroundColor: '#fce4ec', color: '#c62828', borderColor: '#f48fb1', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>😀 Emoji Row</span>}
                   <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
                     style={{ backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                     2014 Style
@@ -2220,7 +2396,7 @@ export default function FBPostGenerator() {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                 border: '1px solid #dddfe2',
               }}>
-                <FBPostPreview ref={previewRef} data={{ ...postData, reactionType, postTextColor, imageGridLayout, showVerifiedBadge }} />
+                <FBPostPreview ref={previewRef} data={{ ...postData, reactionType, postTextColor, imageGridLayout, showVerifiedBadge, showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji }} />
               </div>
             </div>
           </div>

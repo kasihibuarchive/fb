@@ -294,6 +294,10 @@ export type EngagementVisibility = 'public' | 'friends' | 'custom'
 
 export type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry'
 
+// v12.0 new types
+export type MilestoneIconType = 'trophy' | 'star' | 'heart' | 'flag'
+export type PostBgPattern = 'none' | 'dots' | 'lines' | 'diagonal' | 'gradient1' | 'gradient2'
+
 export interface ReplyData {
   id: string
   name: string
@@ -373,6 +377,13 @@ export interface FBPostData {
   postTextColor: string
   imageGridLayout: 'auto' | 'grid2x2' | 'grid2x3'
   showVerifiedBadge: boolean
+  // v12.0 new fields
+  showReactionBar: boolean
+  showMilestone: boolean
+  milestoneText: string
+  milestoneIcon: MilestoneIconType
+  postBgPattern: PostBgPattern
+  showActionEmoji: boolean
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -448,6 +459,13 @@ export const defaultPostData: FBPostData = {
   postTextColor: '',
   imageGridLayout: 'auto',
   showVerifiedBadge: false,
+  // v12.0 defaults
+  showReactionBar: false,
+  showMilestone: false,
+  milestoneText: '',
+  milestoneIcon: 'trophy',
+  postBgPattern: 'none',
+  showActionEmoji: false,
 }
 
 export const feelingOptions = [
@@ -504,6 +522,23 @@ export const reactionTypeOptions: { value: ReactionType; label: string; icon: st
   { value: 'wow', label: 'Wow', icon: '😮', color: '#f7b928' },
   { value: 'sad', label: 'Sad', icon: '😢', color: '#f7b928' },
   { value: 'angry', label: 'Angry', icon: '😡', color: '#e74c3c' },
+]
+
+// v12.0 milestone & pattern options
+export const milestoneIconOptions: { value: MilestoneIconType; label: string; icon: string }[] = [
+  { value: 'trophy', label: 'Trophy', icon: '🏆' },
+  { value: 'star', label: 'Star', icon: '⭐' },
+  { value: 'heart', label: 'Heart', icon: '💝' },
+  { value: 'flag', label: 'Flag', icon: '🚩' },
+]
+
+export const postBgPatternOptions: { value: PostBgPattern; label: string; preview: string }[] = [
+  { value: 'none', label: 'None', preview: '⬜' },
+  { value: 'dots', label: 'Dots', preview: '⚪' },
+  { value: 'lines', label: 'Lines', preview: '📊' },
+  { value: 'diagonal', label: 'Diagonal', preview: '🔷' },
+  { value: 'gradient1', label: 'Warm Gradient', preview: '🌅' },
+  { value: 'gradient2', label: 'Cool Gradient', preview: '🌊' },
 ]
 
 const moreStoriesData = [
@@ -875,6 +910,99 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       ],
     },
   },
+  {
+    name: 'Game Night',
+    emoji: '🎮',
+    data: {
+      ...defaultPostData,
+      userName: 'Jake Thompson',
+      timestamp: 'December 13, 2014 at 11:45 PM',
+      postContent: 'Game night with the boys! 🔥🎮\n\nEpic FIFA tournament — yours truly came out on top after 6 hours of intense competition. Sorry not sorry, Mike 😂\n\n#GameNight #FIFA #BoysNight #CompetitiveGaming',
+      likes: 67,
+      comments: 23,
+      shares: 2,
+      topLikerName: 'Mike Anderson',
+      showCommentPreview: true,
+      highlightHashtags: true,
+      taggedFriends: ['Mike Anderson', 'Chris Taylor', 'Dave Wilson'],
+      feeling: 'feeling excited',
+      textStyle: 'normal',
+      postBgPattern: 'gradient2',
+      showReactionBar: true,
+      showActionEmoji: true,
+      commentsList: [
+        { id: '1', commenterName: 'Mike Anderson', commenterAvatar: defaultAvatar, commentText: 'I demand a rematch!! That penalty shootout was rigged 😤', commentTimestamp: '30 min', commentLikes: 8, replies: [
+          { id: 'r1', name: 'Jake Thompson', avatar: defaultAvatar, text: 'Anytime, anyplace 🏆😄', timestamp: '25 min' },
+        ] },
+        { id: '2', commenterName: 'Chris Taylor', commenterAvatar: defaultAvatar, commentText: 'Best game night ever! Next time I\'m bringing snacks', commentTimestamp: '20 min', commentLikes: 3, replies: [] },
+      ],
+    },
+  },
+  {
+    name: 'Flashback Friday',
+    emoji: '📸',
+    data: {
+      ...defaultPostData,
+      userName: 'Emily Rodriguez',
+      timestamp: 'March 21, 2014 at 4:20 PM',
+      postContent: '#FlashbackFriday to this incredible sunset in Santorini, Greece 🇬🇷🌅\n\nOne of the most beautiful places I\'ve ever been. The food, the people, the views... everything was perfect. Adding this to the "must visit again" list!\n\n#FF #TravelMemories #Santorini #Wanderlust #Greece #Sunset',
+      likes: 823,
+      comments: 67,
+      shares: 34,
+      topLikerName: 'Travel Magazine',
+      showCommentPreview: true,
+      highlightHashtags: true,
+      showVerifiedBadge: true,
+      reactionType: 'love',
+      textStyle: 'normal',
+      postBgPattern: 'dots',
+      showNavBar: true,
+      showSidebars: true,
+      showMoreStories: true,
+      commentsList: [
+        { id: '1', commenterName: 'Sarah Kim', commenterAvatar: defaultAvatar, commentText: 'OMG I was there the same summer!! What an amazing place 💙', commentTimestamp: '3 hrs', commentLikes: 23, replies: [] },
+        { id: '2', commenterName: 'Travel Bug', commenterAvatar: defaultAvatar, commentText: 'Santorini sunsets are unreal. Great photo! 📸', commentTimestamp: '2 hrs', commentLikes: 11, replies: [
+          { id: 'r1', name: 'Emily Rodriguez', avatar: defaultAvatar, text: 'Thank you! It was even more stunning in person ✨', timestamp: '1 hr' },
+        ] },
+        { id: '3', commenterName: 'James Lee', commenterAvatar: defaultAvatar, commentText: 'Adding this to my bucket list right now 😍', commentTimestamp: '1 hr', commentLikes: 7, replies: [] },
+      ],
+    },
+  },
+  {
+    name: "New Year's Eve",
+    emoji: '🎆',
+    data: {
+      ...defaultPostData,
+      userName: 'Times Square Official',
+      timestamp: 'December 31, 2014 at 11:59 PM',
+      postContent: '🎆 HAPPY NEW YEAR FROM TIMES SQUARE! 🎆\n\nThe ball is dropping and the crowd is going WILD! What an incredible way to welcome 2015! 🎉🎊\n\nShare this if you\'re celebrating New Year\'s with us!\n\n#NYE2015 #TimesSquare #NewYear #BallDrop #NYC #HappyNewYear',
+      likes: 24891,
+      comments: 3456,
+      shares: 8923,
+      topLikerName: 'CNN',
+      showCommentPreview: true,
+      highlightHashtags: true,
+      showVerifiedBadge: true,
+      textStyle: 'bold',
+      isPinned: true,
+      showMilestone: true,
+      milestoneText: 'Happy New Year 2015!',
+      milestoneIcon: 'star',
+      reactionType: 'love',
+      postBgPattern: 'gradient1',
+      showNavBar: true,
+      showSidebars: true,
+      showPeopleAlsoLike: true,
+      showMoreStories: true,
+      commentsList: [
+        { id: '1', commenterName: 'Lisa Chen', commenterAvatar: defaultAvatar, commentText: 'HAPPY NEW YEAR!! 🎉🎉🎉🎊🎆', commentTimestamp: 'Just now', commentLikes: 456, replies: [] },
+        { id: '2', commenterName: 'David Wilson', commenterAvatar: defaultAvatar, commentText: 'Wishing everyone an amazing 2015! Let\'s make it count! 💪', commentTimestamp: '1 min', commentLikes: 234, replies: [
+          { id: 'r1', name: 'Sarah Miller', avatar: defaultAvatar, text: 'Hear hear! 🥂✨', timestamp: 'Just now' },
+        ] },
+        { id: '3', commenterName: 'Alex Rivera', commenterAvatar: defaultAvatar, commentText: 'I\'m here right now and it\'s INSANE! Best night ever!', commentTimestamp: '2 min', commentLikes: 178, replies: [] },
+      ],
+    },
+  },
 ]
 
 // ──────────── Helpers ────────────
@@ -934,6 +1062,83 @@ function getFontFamily(font: string): string {
 }
 
 const TRUNCATE_LENGTH = 280
+
+// ──────────── v12.0 Milestone SVG Icons ────────────
+
+function TrophyIcon({ size = 24, color = '#f7b928' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 4V2h10v2h1a2 2 0 012 2v2a2 2 0 01-2 2h-1.1A5 5 0 0112 13.9V16h1a3 3 0 013 3v2H8v-2a3 3 0 013-3h1v-2.1A5 5 0 017.1 10H6a2 2 0 01-2-2V6a2 2 0 012-2h1zm0 2H6v2h1V6zm10 0v2h1V6h-1z" fill={color} opacity="0.9"/>
+    </svg>
+  )
+}
+
+function StarMilestoneIcon({ size = 24, color = '#f7b928' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill={color} opacity="0.9"/>
+    </svg>
+  )
+}
+
+function HeartMilestoneIcon({ size = 24, color = '#e74c3c' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill={color} opacity="0.9"/>
+    </svg>
+  )
+}
+
+function FlagMilestoneIcon({ size = 24, color = '#e74c3c' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z" fill={color} opacity="0.9"/>
+    </svg>
+  )
+}
+
+function getMilestoneIcon(type: MilestoneIconType, size?: number): React.ReactNode {
+  switch (type) {
+    case 'trophy': return <TrophyIcon size={size || 24} />
+    case 'star': return <StarMilestoneIcon size={size || 24} />
+    case 'heart': return <HeartMilestoneIcon size={size || 24} />
+    case 'flag': return <FlagMilestoneIcon size={size || 24} />
+    default: return <TrophyIcon size={size || 24} />
+  }
+}
+
+function getPatternStyle(pattern: PostBgPattern): React.CSSProperties {
+  switch (pattern) {
+    case 'dots':
+      return {
+        backgroundImage: 'radial-gradient(circle, #dddfe2 1px, transparent 1px)',
+        backgroundSize: '20px 20px',
+        opacity: 0.4,
+      }
+    case 'lines':
+      return {
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 19px, #e5e5e5 19px, #e5e5e5 20px)',
+        opacity: 0.3,
+      }
+    case 'diagonal':
+      return {
+        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 11px)',
+        opacity: 1,
+      }
+    case 'gradient1':
+      return {
+        background: 'linear-gradient(135deg, rgba(255,183,77,0.08) 0%, rgba(255,138,101,0.08) 50%, rgba(255,87,34,0.05) 100%)',
+        opacity: 1,
+      }
+    case 'gradient2':
+      return {
+        background: 'linear-gradient(135deg, rgba(66,103,178,0.06) 0%, rgba(56,142,60,0.06) 50%, rgba(0,137,123,0.06) 100%)',
+        opacity: 1,
+      }
+    default:
+      return {}
+  }
+}
 
 // ──────────── PostCard with animation wrapper ────────────
 
@@ -1093,15 +1298,15 @@ function FacebookNavBar({ userName, profilePicture }: { userName: string; profil
           letterSpacing: '-0.3px', lineHeight: 1,
         }}>facebook</span>
         <div style={{
-          backgroundColor: '#ffffff', borderRadius: '2px',
+          backgroundColor: '#ffffff', borderRadius: '3px',
           padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px',
           minWidth: '170px', maxWidth: '200px',
         }}>
           <svg viewBox="0 0 20 20" width="14" height="14" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="#9197a3" strokeWidth="1.8"/>
-            <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="#9197a3" strokeWidth="1.8" strokeLinecap="round"/>
+            <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="#a8b0bc" strokeWidth="1.8"/>
+            <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="#a8b0bc" strokeWidth="1.8" strokeLinecap="round"/>
           </svg>
-          <span style={{ fontSize: '11px', color: '#9197a3', whiteSpace: 'nowrap' }}>Search</span>
+          <span style={{ fontSize: '11px', color: '#a8b0bc', whiteSpace: 'nowrap' }}>Search</span>
         </div>
       </div>
 
@@ -1205,7 +1410,7 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
   }
   const sectionHeaderStyle: React.CSSProperties = {
     fontSize: '11px', fontWeight: 700, color: '#9197a3',
-    textTransform: 'uppercase', padding: '6px 10px 3px 10px',
+    textTransform: 'uppercase', padding: '8px 10px 3px 10px',
     letterSpacing: '0.03em',
   }
   const smallIcon = (
@@ -1257,7 +1462,7 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
           const isHidden = !showMoreFavourites && i >= 3
           return (
             <div key={item} style={{
-              fontSize: '12px', color: '#1d2129', padding: '2px 10px', cursor: 'pointer',
+              fontSize: '12.5px', color: '#1d2129', padding: '2px 10px', cursor: 'pointer',
               display: isHidden ? 'none' : 'block', textDecoration: 'none',
               backgroundColor: i === 0 ? '#e7f3ff' : 'transparent',
               fontWeight: i === 0 ? 600 : 400,
@@ -1280,7 +1485,7 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
       {/* Pages */}
       <div style={navSectionStyle}>
         <div style={sectionHeaderStyle}>Pages</div>
-        <div style={{ fontSize: '12px', color: '#1d2129', padding: '2px 10px', cursor: 'pointer', display: 'block', textDecoration: 'none' }}>
+        <div style={{ fontSize: '12.5px', color: '#1d2129', padding: '2px 10px', cursor: 'pointer', display: 'block', textDecoration: 'none' }}>
           {smallIcon}
           Create Page
         </div>
@@ -1289,7 +1494,7 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
       {/* Groups */}
       <div style={navSectionStyle}>
         <div style={sectionHeaderStyle}>Groups</div>
-        <div style={{ fontSize: '12px', color: '#1d2129', padding: '2px 10px', cursor: 'pointer', display: 'block', textDecoration: 'none' }}>
+        <div style={{ fontSize: '12.5px', color: '#1d2129', padding: '2px 10px', cursor: 'pointer', display: 'block', textDecoration: 'none' }}>
           {smallIcon}
           Create Group
         </div>
@@ -1298,11 +1503,11 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
       {/* Apps */}
       <div style={navSectionStyle}>
         <div style={sectionHeaderStyle}>Apps</div>
-        <div style={{ fontSize: '12px', color: '#1d2129', padding: '2px 10px', cursor: 'pointer', display: 'block', textDecoration: 'none' }}>
+        <div style={{ fontSize: '12.5px', color: '#1d2129', padding: '2px 10px', cursor: 'pointer', display: 'block', textDecoration: 'none' }}>
           {smallIcon}
           Find Friends
         </div>
-        <div style={{ fontSize: '12px', color: '#9197a3', padding: '2px 10px', cursor: 'pointer', display: 'block', textDecoration: 'none' }}>
+        <div style={{ fontSize: '12.5px', color: '#9197a3', padding: '2px 10px', cursor: 'pointer', display: 'block', textDecoration: 'none' }}>
           {smallIcon}
           On This Day
         </div>
@@ -1444,7 +1649,7 @@ function FacebookRightSidebar() {
       </div>
 
       {/* People You May Know */}
-      <div style={{ borderBottom: '1px solid #e5e5e5' }}>
+      <div style={{ borderBottom: '1px solid #e5e5e5', paddingTop: '10px' }}>
         <div style={sectionHeaderStyle}>People You May Know</div>
         {[
           { name: 'Emily Davis', mutFriends: 12 },
@@ -1477,7 +1682,7 @@ function FacebookRightSidebar() {
             </div>
             <div style={{
               fontSize: '11px', color: '#ffffff', backgroundColor: '#4267B2',
-              padding: '3px 8px', borderRadius: '2px', cursor: 'pointer', fontWeight: 600,
+              padding: '4px 10px', borderRadius: '2px', cursor: 'pointer', fontWeight: 600,
               whiteSpace: 'nowrap',
             }}>
               Add Friend
@@ -1537,6 +1742,8 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
       pollQuestion, pollOptions, pollVotes, pollTotalVotes, textStyle,
       isPinned, sponsoredBy, customBadgeText,
       reactionType, postTextColor, imageGridLayout, showVerifiedBadge,
+      // v12.0 new fields
+      showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji,
     } = data
 
     const hasEngagement = likes > 0 || comments > 0 || shares > 0
@@ -1612,6 +1819,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                   textStyle={textStyle}
                   isPinned={isPinned} sponsoredBy={sponsoredBy} customBadgeText={customBadgeText}
                   reactionType={reactionType} postTextColor={postTextColor} imageGridLayout={imageGridLayout} showVerifiedBadge={showVerifiedBadge}
+                  showReactionBar={showReactionBar} showMilestone={showMilestone} milestoneText={milestoneText} milestoneIcon={milestoneIcon} postBgPattern={postBgPattern} showActionEmoji={showActionEmoji}
                 />
                 {showMoreStories && <MoreStoriesSection />}
                 <FacebookFooter />
@@ -1651,6 +1859,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                 textStyle={textStyle}
                 isPinned={isPinned} sponsoredBy={sponsoredBy} customBadgeText={customBadgeText}
                 reactionType={reactionType} postTextColor={postTextColor} imageGridLayout={imageGridLayout} showVerifiedBadge={showVerifiedBadge}
+                showReactionBar={showReactionBar} showMilestone={showMilestone} milestoneText={milestoneText} milestoneIcon={milestoneIcon} postBgPattern={postBgPattern} showActionEmoji={showActionEmoji}
               />
             </div>
             {showNavBar && showMoreStories && <MoreStoriesSection />}
@@ -2025,6 +2234,8 @@ function PostCard({
   pollQuestion, pollOptions, pollVotes, pollTotalVotes, textStyle,
   isPinned, sponsoredBy, customBadgeText,
   reactionType, postTextColor, imageGridLayout, showVerifiedBadge,
+  // v12.0 new fields
+  showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji,
 }: {
   profilePicture: string
   userName: string
@@ -2086,6 +2297,13 @@ function PostCard({
   postTextColor: string
   imageGridLayout: 'auto' | 'grid2x2' | 'grid2x3'
   showVerifiedBadge: boolean
+  // v12.0 new fields
+  showReactionBar: boolean
+  showMilestone: boolean
+  milestoneText: string
+  milestoneIcon: MilestoneIconType
+  postBgPattern: PostBgPattern
+  showActionEmoji: boolean
 }) {
   const bgColor = getPostBgColor(postBackground)
   const br = borderRadius || 3
@@ -2115,6 +2333,17 @@ function PostCard({
           : bgColor,
         position: 'relative',
       }}>
+        {/* ─── Background Pattern Overlay ─── */}
+        {postBgPattern !== 'none' && (
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            pointerEvents: 'none', zIndex: 0, borderRadius: `${br}px`,
+            ...getPatternStyle(postBgPattern),
+          }} />
+        )}
+
+        {/* Content wrapper — ensures content above pattern */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
         {/* ─── Pinned Post Banner ─── */}
         {isPinned && (
           <div style={{
@@ -2159,6 +2388,35 @@ function PostCard({
               <path d="M8 4v5M8 10.5v.01" fill="none" stroke="#f57c00" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             <span>{customBadgeText}</span>
+          </div>
+        )}
+
+        {/* ─── Milestone / Achievement Banner ─── */}
+        {showMilestone && milestoneText && (
+          <div style={{
+            background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)',
+            padding: '12px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            borderBottom: '1px solid #ffcc80',
+          }}>
+            <div style={{
+              width: '40px', height: '40px', minWidth: '40px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 183, 77, 0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {getMilestoneIcon(milestoneIcon, 24)}
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#e65100' }}>
+                {milestoneText}
+              </div>
+              <div style={{ fontSize: '11px', color: '#bf360c', opacity: 0.7, marginTop: '1px' }}>
+                {milestoneIcon === 'trophy' ? 'Achievement Unlocked' : milestoneIcon === 'star' ? 'Special Moment' : milestoneIcon === 'heart' ? 'Celebrating Together' : 'Milestone Reached'}
+              </div>
+            </div>
           </div>
         )}
 
@@ -2324,12 +2582,13 @@ function PostCard({
         {/* ─── Post Content ─── */}
         {postContent && (
           <div style={{
-            padding: (hasImages || sharedLink) ? '6px 12px 8px 12px' : '6px 12px 8px 60px',
+            padding: (hasImages || sharedLink) ? '6px 12px 8px 12px' : '6px 12px 10px 60px',
             fontSize: textStyle === 'large' ? '18px' : '14px',
             lineHeight: '1.42', color: postTextColor || '#1d2129',
             wordBreak: 'break-word', whiteSpace: 'pre-wrap',
             fontFamily: contentFontFamily,
             letterSpacing: '0.01em',
+            textShadow: '0 0 1px rgba(0,0,0,0.01)',
             ...textStyles,
           }}>
             {renderTextWithHighlights(displayContent, highlightHashtags)}
@@ -2377,6 +2636,7 @@ function PostCard({
             <div style={{
               border: '1px solid #dddfe2', borderRadius: '3px',
               overflow: 'hidden', cursor: 'pointer',
+              transition: 'box-shadow 0.2s ease',
             }}>
               {linkImage && (
                 <div style={{
@@ -2491,7 +2751,7 @@ function PostCard({
         {/* ─── Engagement Stats (improved with larger circles) ─── */}
         {hasEngagement && (
           <div style={{
-            padding: '8px 12px 4px 12px',
+            padding: '12px 12px 6px 12px',
             borderTop: '1px solid #e5e5e5',
             display: 'flex',
             alignItems: 'center',
@@ -2539,11 +2799,11 @@ function PostCard({
                   </div>
                 )}
                 {reactionType !== 'like' && (
-                  <span style={{ fontSize: '12px', color: '#6d7380', fontWeight: 600, marginLeft: '2px' }}>+</span>
+                  <span style={{ fontSize: '12px', color: '#65676b', fontWeight: 600, marginLeft: '2px' }}>+</span>
                 )}
               </div>
             )}
-            <span style={{ fontSize: '12px', color: '#6d7380', fontWeight: 600 }}>
+            <span style={{ fontSize: '12px', color: '#65676b', fontWeight: 600 }}>
               {topLikerName && hasLikes
                 ? `Liked by ${topLikerName} and ${likes > 1 ? formatEngagement(likes - 1) : ''} others`
                 : hasLikes
@@ -2553,7 +2813,7 @@ function PostCard({
             </span>
             {/* Comments & shares + engagement visibility icon */}
             {(hasComments || hasShares) && (
-              <span style={{ fontSize: '12px', color: '#6d7380' }}>
+              <span style={{ fontSize: '12px', color: '#65676b' }}>
                 {(topLikerName && hasLikes) && ' · '}
                 {hasComments && `${formatEngagement(comments)} comments`}
                 {hasComments && hasShares && ' · '}
@@ -2584,6 +2844,76 @@ function PostCard({
           <div style={{
             height: '1px', backgroundColor: '#e5e5e5', margin: '0 12px',
           }} />
+        )}
+
+        {/* ─── Emoji Reaction Bar ─── */}
+        {showReactionBar && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '2px',
+            padding: '5px 12px 4px 12px',
+            borderBottom: '1px solid #e5e5e5',
+            backgroundColor: '#fafafa',
+          }}>
+            {[
+              { emoji: '👍', bg: '#3b5998', active: true },
+              { emoji: '❤️', bg: '#e74c3c', active: reactionType === 'love' },
+              { emoji: '😂', bg: '#f7b928', active: reactionType === 'haha' },
+              { emoji: '😮', bg: '#f7b928', active: reactionType === 'wow' },
+              { emoji: '😢', bg: '#f7b928', active: reactionType === 'sad' },
+              { emoji: '😡', bg: '#e74c3c', active: reactionType === 'angry' },
+            ].map((r, i) => (
+              <div key={i} style={{
+                width: '28px', height: '28px',
+                borderRadius: '50%',
+                backgroundColor: r.active ? `${r.bg}15` : 'transparent',
+                border: r.active ? `1px solid ${r.bg}40` : '1px solid transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '16px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                transform: r.active ? 'scale(1.15)' : 'scale(1)',
+              }}>
+                {r.emoji}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ─── Mini Emoji Row Above Action Bar ─── */}
+        {showActionEmoji && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '4px 12px',
+            borderBottom: '1px solid #e5e5e5',
+            backgroundColor: '#ffffff',
+          }}>
+            {['😀', '😍', '😂', '😮', '😢', '😡', '👍', '👎'].map((e, i) => (
+              <div key={i} style={{
+                fontSize: '14px', cursor: 'pointer',
+                filter: 'grayscale(0.3)',
+                opacity: 0.8,
+              }}>
+                {e}
+              </div>
+            ))}
+            <div style={{
+              marginLeft: 'auto',
+              width: '20px', height: '20px',
+              borderRadius: '50%',
+              backgroundColor: '#f0f2f5',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}>
+              <svg viewBox="0 0 10 10" width="8" height="8" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 5l3 3 3-3" fill="none" stroke="#9197a3" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+          </div>
         )}
 
         {/* ─── Action Bar: Like · Comment · Share ─── */}
@@ -2820,6 +3150,7 @@ function PostCard({
               flex: 1, backgroundColor: '#f0f2f5', borderRadius: '18px',
               padding: '7px 12px', fontSize: '13px', color: '#9197a3',
               border: '1px solid #dddfe2',
+              boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
               display: 'flex',
               alignItems: 'center',
             }}>
@@ -2868,11 +3199,12 @@ function PostCard({
         {showWatermark && (
           <div style={{
             position: 'absolute', bottom: '50px', right: '12px',
-            fontSize: '10px', color: '#999999', fontStyle: 'italic',
+            fontSize: '10px', color: '#999999', fontStyle: 'italic', zIndex: 2,
           }}>
             Generated with 2014 FB Post Generator
           </div>
         )}
+        </div>
       </div>
     </PostCardWrapper>
   )
