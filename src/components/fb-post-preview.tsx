@@ -1,6 +1,7 @@
 'use client'
 
-import { forwardRef } from 'react'
+import type React from 'react'
+import { useState, forwardRef } from 'react'
 
 // ──────────── 2014 Facebook Inline SVG Icons ────────────
 
@@ -43,6 +44,16 @@ function FriendsIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: 
   )
 }
 
+function LockIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="9" width="12" height="8" rx="1.5" fill="none" stroke={color} strokeWidth="1.3"/>
+      <path d="M7 9V6.5a3 3 0 016 0V9" fill="none" stroke={color} strokeWidth="1.3" strokeLinecap="round"/>
+      <circle cx="10" cy="13" r="1" fill={color}/>
+    </svg>
+  )
+}
+
 function CommentBubbleIcon({ size = 13, color = '#7f7f7f' }: { size?: number; color?: string }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} xmlns="http://www.w3.org/2000/svg" fill={color}>
@@ -63,6 +74,15 @@ function ShareArrowIcon({ size = 13, color = '#7f7f7f' }: { size?: number; color
 
 export type VisibilityOption = 'public' | 'friends' | 'onlyme'
 
+export interface CommentData {
+  id: string
+  commenterName: string
+  commenterAvatar: string
+  commentText: string
+  commentTimestamp: string
+  commentLikes: number
+}
+
 export interface FBPostData {
   profilePicture: string
   userName: string
@@ -80,13 +100,22 @@ export interface FBPostData {
   shares: number
   topLikerName: string
   showCommentPreview: boolean
-  commentText: string
-  commenterName: string
-  commenterAvatar: string
-  commentTimestamp: string
+  commentsList: CommentData[]
+  showNavBar: boolean
+  highlightHashtags: boolean
+  truncateLongPosts: boolean
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
+
+export const defaultComment: CommentData = {
+  id: '1',
+  commenterName: 'Mike Johnson',
+  commenterAvatar: defaultAvatar,
+  commentText: 'This looks amazing! Where is this place?',
+  commentTimestamp: '2 hrs',
+  commentLikes: 3,
+}
 
 export const defaultPostData: FBPostData = {
   profilePicture: defaultAvatar,
@@ -105,51 +134,57 @@ export const defaultPostData: FBPostData = {
   shares: 3,
   topLikerName: 'Jane Smith',
   showCommentPreview: false,
-  commentText: 'This looks amazing! Where is this place?',
-  commenterName: 'Mike Johnson',
-  commenterAvatar: defaultAvatar,
-  commentTimestamp: '2 hrs',
+  commentsList: [defaultComment],
+  showNavBar: false,
+  highlightHashtags: true,
+  truncateLongPosts: false,
 }
 
-export const presets: { name: string; data: FBPostData }[] = [
+export const presets: { name: string; emoji: string; data: FBPostData }[] = [
   {
-    name: '☀️ Coffee & Vibes',
+    name: 'Coffee & Vibes',
+    emoji: '☕',
     data: {
       ...defaultPostData,
       userName: 'Sarah Mitchell',
       timestamp: 'June 15, 2014 at 9:23 AM',
-      postContent: 'Sunday morning coffee ritual ☕\n\nThere\'s something magical about slow mornings. No alarms, just the smell of fresh coffee and the sound of birds. This is what living feels like. ✨',
-      attachedImage: '',
+      postContent: 'Sunday morning coffee ritual ☕\n\nThere\'s something magical about slow mornings. No alarms, just the smell of fresh coffee and the sound of birds. This is what living feels like. ✨\n\n#SundayVibes #CoffeeLover #SlowLiving',
       likes: 127,
       comments: 24,
       shares: 5,
       topLikerName: 'Emily Davis',
       showCommentPreview: true,
-      commentText: 'So jealous! I need a morning like that 😭',
-      commenterName: 'Alex Turner',
-      commentTimestamp: '3 hrs',
+      commentsList: [
+        { id: '1', commenterName: 'Alex Turner', commenterAvatar: defaultAvatar, commentText: 'So jealous! I need a morning like that 😭', commentTimestamp: '3 hrs', commentLikes: 5 },
+        { id: '2', commenterName: 'Rachel Kim', commenterAvatar: defaultAvatar, commentText: 'Where is this café?? It looks gorgeous!', commentTimestamp: '2 hrs', commentLikes: 2 },
+      ],
+      highlightHashtags: true,
+      truncateLongPosts: false,
     },
   },
   {
-    name: '🎉 Birthday Post',
+    name: 'Birthday Post',
+    emoji: '🎂',
     data: {
       ...defaultPostData,
       userName: 'Chris Parker',
       timestamp: 'March 8, 2014 at 12:00 PM',
       postContent: 'HAPPY BIRTHDAY to my amazing sister! 🎂🎈\n\nYou\'re not just my sister, you\'re my best friend. Here\'s to another year of adventures, laughter, and making memories together. Love you to the moon and back! 🌙💕',
-      attachedImage: '',
       likes: 256,
       comments: 47,
       shares: 12,
       topLikerName: 'David Wilson',
       showCommentPreview: true,
-      commentText: 'Aww happy birthday to your sister!! 🎉🎉',
-      commenterName: 'Jessica Brown',
-      commentTimestamp: '1 hr',
+      commentsList: [
+        { id: '1', commenterName: 'Jessica Brown', commenterAvatar: defaultAvatar, commentText: 'Aww happy birthday to your sister!! 🎉🎉🎉', commentTimestamp: '1 hr', commentLikes: 8 },
+        { id: '2', commenterName: 'Tom Richards', commenterAvatar: defaultAvatar, commentText: 'Happy birthday! Hope she has the best day ever 🥳', commentTimestamp: '45 min', commentLikes: 1 },
+        { id: '3', commenterName: 'Lisa Chen', commenterAvatar: defaultAvatar, commentText: 'Such a sweet post! 🥰', commentTimestamp: '30 min', commentLikes: 3 },
+      ],
     },
   },
   {
-    name: '📸 Shared Link',
+    name: 'Shared Link',
+    emoji: '📱',
     data: {
       ...defaultPostData,
       userName: 'Tech Enthusiast',
@@ -159,44 +194,201 @@ export const presets: { name: string; data: FBPostData }[] = [
       linkTitle: 'Apple Introduces iPhone 6 and iPhone 6 Plus',
       linkDomain: 'apple.com',
       linkDescription: 'Apple today announced iPhone 6 and iPhone 6 Plus, the biggest advancements in the history of iPhone, featuring new designs with bigger, thinner displays.',
-      linkImage: '',
       attachedImage: '',
       likes: 89,
       comments: 31,
       shares: 15,
       topLikerName: 'Gadget Guru',
       showCommentPreview: true,
-      commentText: 'The 6 Plus is too big IMO. 6 is perfect!',
-      commenterName: 'Sam Lee',
-      commentTimestamp: '45 min',
+      commentsList: [
+        { id: '1', commenterName: 'Sam Lee', commenterAvatar: defaultAvatar, commentText: 'The 6 Plus is too big IMO. 6 is perfect!', commentTimestamp: '45 min', commentLikes: 12 },
+        { id: '2', commenterName: 'Nina Patel', commenterAvatar: defaultAvatar, commentText: 'I just pre-ordered the 6 Plus. Can\'t wait! 📱', commentTimestamp: '30 min', commentLikes: 4 },
+      ],
     },
   },
   {
-    name: '🏆 Achievement Unlocked',
+    name: 'Achievement',
+    emoji: '🏆',
     data: {
       ...defaultPostData,
       userName: 'Marcus Johnson',
       timestamp: 'December 18, 2014 at 6:15 PM',
-      postContent: '4 years of hard work and it finally happened... I got the promotion! 🎉🎉🎉\n\nThank you to everyone who believed in me, supported me through the late nights, and never let me give up. This one\'s for you. 💪\n\n#Blessed #Grateful #NewChapter',
-      attachedImage: '',
+      postContent: '4 years of hard work and it finally happened... I got the promotion! 🎉🎉🎉\n\nThank you to everyone who believed in me, supported me through the late nights, and never let me give up. This one\'s for you. 💪\n\n#Blessed #Grateful #NewChapter #HardWorkPaysOff',
       likes: 534,
       comments: 89,
       shares: 23,
       topLikerName: 'Mom',
       showCommentPreview: true,
-      commentText: 'SO PROUD OF YOU!!! We always knew you could do it! ❤️❤️❤️',
-      commenterName: 'Linda Johnson',
-      commentTimestamp: '30 min',
+      commentsList: [
+        { id: '1', commenterName: 'Linda Johnson', commenterAvatar: defaultAvatar, commentText: 'SO PROUD OF YOU!!! We always knew you could do it! ❤️❤️❤️', commentTimestamp: '30 min', commentLikes: 45 },
+        { id: '2', commenterName: 'Dad', commenterAvatar: defaultAvatar, commentText: 'Well done son! You earned this. 💪', commentTimestamp: '25 min', commentLikes: 22 },
+      ],
+      highlightHashtags: true,
+    },
+  },
+  {
+    name: 'Throwback',
+    emoji: '📸',
+    data: {
+      ...defaultPostData,
+      userName: 'Jennifer Lopez',
+      timestamp: 'February 14, 2014 at 8:00 PM',
+      postContent: 'Found this old photo from 2008... oh how times have changed! 😂 #ThrowbackThursday #TBT #Memories #GoodOldDays',
+      likes: 1892,
+      comments: 156,
+      shares: 43,
+      topLikerName: 'Mark Zuckerberg',
+      showCommentPreview: true,
+      showNavBar: true,
+      commentsList: [
+        { id: '1', commenterName: 'Ashley Williams', commenterAvatar: defaultAvatar, commentText: 'HAHAHA I remember this! So funny 😂😂', commentTimestamp: '5 hrs', commentLikes: 34 },
+        { id: '2', commenterName: 'Ryan Martinez', commenterAvatar: defaultAvatar, commentText: 'The outfit though!! 🔥🔥', commentTimestamp: '4 hrs', commentLikes: 19 },
+        { id: '3', commenterName: 'Jessica Nguyen', commenterAvatar: defaultAvatar, commentText: 'We were so young! Miss those days 🥺', commentTimestamp: '3 hrs', commentLikes: 11 },
+      ],
+      highlightHashtags: true,
+      truncateLongPosts: false,
+    },
+  },
+  {
+    name: 'Full Screenshot',
+    emoji: '🖥️',
+    data: {
+      ...defaultPostData,
+      userName: 'Jessica Williams',
+      timestamp: 'November 5, 2014 at 2:15 PM',
+      postContent: 'Excited to announce I\'m running the NYC Marathon next month! 🏃‍♀️ If anyone wants to sponsor me, link is in the comments. Every dollar counts! 💙\n\n#NYCMarathon #Running #Charity #MakeADifference',
+      attachedImage: '',
+      likes: 73,
+      comments: 18,
+      shares: 6,
+      topLikerName: 'Sarah Miller',
+      showCommentPreview: true,
+      showNavBar: true,
+      commentsList: [
+        { id: '1', commenterName: 'David Park', commenterAvatar: defaultAvatar, commentText: 'You got this! I\'ll sponsor you for sure 💪', commentTimestamp: '1 hr', commentLikes: 7 },
+        { id: '2', commenterName: 'Emma Thompson', commenterAvatar: defaultAvatar, commentText: 'That\'s amazing! What charity are you running for?', commentTimestamp: '50 min', commentLikes: 2 },
+      ],
+      highlightHashtags: true,
     },
   },
 ]
 
-// ──────────── Helper ────────────
+// ──────────── Helpers ────────────
 
 function formatEngagement(count: number): string {
   if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`
   if (count >= 1000) return `${(count / 1000).toFixed(1)}K`
   return count.toString()
+}
+
+function renderTextWithHashtags(text: string, highlight: boolean): React.ReactNode {
+  if (!highlight) return text
+  const parts = text.split(/(#\w+)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('#')) {
+      return <span key={i} style={{ color: '#3b5998', fontWeight: 600 }}>{part}</span>
+    }
+    return part
+  })
+}
+
+const TRUNCATE_LENGTH = 280
+
+// ──────────── Facebook Navigation Bar ────────────
+
+function FacebookNavBar({ userName, profilePicture }: { userName: string; profilePicture: string }) {
+  return (
+    <div style={{
+      backgroundColor: '#3b5998',
+      padding: '0 10px',
+      display: 'flex',
+      alignItems: 'center',
+      height: '43px',
+      gap: '0',
+    }}>
+      {/* Left: f logo + Search */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <div style={{
+          width: '22px', height: '22px', backgroundColor: '#ffffff',
+          borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <span style={{
+            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            fontSize: '14px', fontWeight: 800, color: '#3b5998', lineHeight: 1,
+          }}>f</span>
+        </div>
+        <div style={{
+          backgroundColor: '#ffffff', borderRadius: '2px',
+          padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px',
+          minWidth: '170px', maxWidth: '200px',
+        }}>
+          <svg viewBox="0 0 20 20" width="14" height="14" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="#9197a3" strokeWidth="1.8"/>
+            <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="#9197a3" strokeWidth="1.8" strokeLinecap="round"/>
+          </svg>
+          <span style={{ fontSize: '11px', color: '#9197a3', whiteSpace: 'nowrap' }}>Search</span>
+        </div>
+      </div>
+
+      {/* Center: nav links */}
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0',
+      }}>
+        {[
+          { label: 'Home', active: true },
+          { label: 'Profile', active: false },
+          { label: 'Friends', active: false },
+          { label: 'Messages', active: false },
+        ].map(item => (
+          <div key={item.label} style={{
+            padding: '6px 12px', fontSize: '12px', fontWeight: 700,
+            color: item.active ? '#ffffff' : '#d8dfea', cursor: 'pointer',
+            borderBottom: item.active ? '2px solid #ffffff' : '2px solid transparent',
+            letterSpacing: '0.01em', whiteSpace: 'nowrap',
+          }}>
+            {item.label}
+          </div>
+        ))}
+      </div>
+
+      {/* Right: user info */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+      }}>
+        <div style={{
+          width: '24px', height: '24px', borderRadius: '2px',
+          overflow: 'hidden', border: '1px solid #2d4373',
+        }}>
+          <img src={profilePicture || defaultAvatar} alt="" style={{
+            width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+          }} />
+        </div>
+        <span style={{
+          fontSize: '12px', fontWeight: 700, color: '#ffffff', cursor: 'pointer',
+          maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {userName}
+        </span>
+        <div style={{
+          width: '24px', height: '24px', backgroundColor: '#4e69a2', borderRadius: '2px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+        }}>
+          <svg viewBox="0 0 20 20" width="12" height="12" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 5h16M2 10h16M2 15h16" stroke="#d8dfea" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <div style={{
+          width: '24px', height: '24px', backgroundColor: '#4e69a2', borderRadius: '2px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+        }}>
+          <svg viewBox="0 0 20 20" width="12" height="12" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 2a7 7 0 100 14 7 7 0 000-14z" fill="none" stroke="#d8dfea" strokeWidth="2"/>
+            <path d="M10 6v5M10 13h.01" fill="none" stroke="#d8dfea" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ──────────── Preview Component ────────────
@@ -211,7 +403,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
       profilePicture, userName, timestamp, postContent, attachedImage,
       sharedLink, linkTitle, linkDomain, linkDescription, linkImage,
       visibility, likes, comments, shares, topLikerName,
-      showCommentPreview, commentText, commenterName, commenterAvatar, commentTimestamp,
+      showCommentPreview, commentsList, showNavBar, highlightHashtags, truncateLongPosts,
     } = data
 
     const hasEngagement = likes > 0 || comments > 0 || shares > 0
@@ -221,7 +413,13 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
     const hasContent = postContent || attachedImage || sharedLink
 
     const visibilityLabel = visibility === 'public' ? 'Public' : visibility === 'friends' ? 'Friends' : 'Only Me'
-    const VisibilityIcon = visibility === 'public' ? GlobeIcon : FriendsIcon
+    const VisibilityIcon = visibility === 'public' ? GlobeIcon : visibility === 'friends' ? FriendsIcon : LockIcon
+
+    const shouldTruncate = truncateLongPosts && postContent && postContent.length > TRUNCATE_LENGTH
+    const [expanded, setExpanded] = useState(false)
+    const displayContent = shouldTruncate && !expanded
+      ? postContent.slice(0, TRUNCATE_LENGTH) + '...'
+      : postContent
 
     return (
       <div
@@ -229,14 +427,27 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
         style={{
           fontFamily: "'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif",
           backgroundColor: '#e9eaed',
-          padding: '24px 20px',
+          padding: '0',
           minHeight: '100%',
           display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'flex-start',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        <div style={{ width: '500px', maxWidth: '100%' }}>
+        {/* ─── Facebook Nav Bar ─── */}
+        {showNavBar && <FacebookNavBar userName={userName} profilePicture={profilePicture} />}
+
+        {/* ─── Blue accent bar below nav ─── */}
+        {showNavBar && (
+          <div style={{ width: '100%', height: '2px', backgroundColor: '#4e69a2' }} />
+        )}
+
+        {/* ─── Feed area ─── */}
+        <div style={{
+          width: showNavBar ? '500px' : '500px',
+          maxWidth: '100%',
+          padding: showNavBar ? '12px 0 24px 0' : '24px 20px',
+        }}>
           {/* ─── Post Container ─── */}
           <div style={{
             backgroundColor: '#ffffff',
@@ -252,7 +463,6 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
               alignItems: 'flex-start',
               gap: '8px',
             }}>
-              {/* Avatar */}
               <div style={{
                 width: '40px', height: '40px', minWidth: '40px',
                 borderRadius: '2px', overflow: 'hidden',
@@ -262,7 +472,6 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                   width: '100%', height: '100%', objectFit: 'cover', display: 'block',
                 }} />
               </div>
-              {/* Name + Timestamp + Visibility */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   fontSize: '13px', fontWeight: 700, color: '#3b5998',
@@ -287,11 +496,19 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
             {/* ─── Post Content ─── */}
             {postContent && (
               <div style={{
-                padding: '4px 12px 8px 60px',
+                padding: attachedImage || sharedLink ? '4px 12px 8px 12px' : '4px 12px 8px 60px',
                 fontSize: '14px', lineHeight: '19px', color: '#1d2129',
                 wordBreak: 'break-word', whiteSpace: 'pre-wrap',
               }}>
-                {postContent}
+                {renderTextWithHashtags(displayContent, highlightHashtags)}
+                {shouldTruncate && (
+                  <span
+                    style={{ color: '#3b5998', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? ' See Less' : 'See More'}
+                  </span>
+                )}
               </div>
             )}
 
@@ -332,9 +549,12 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                     <div style={{
                       backgroundColor: '#f0f2f5', height: '130px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      borderBottom: '1px solid #dddfe2',
+                      borderBottom: '1px solid #dddfe2', flexDirection: 'column', gap: '4px',
                     }}>
-                      <span style={{ color: '#8a8d91', fontSize: '13px' }}>🔗 Link Preview</span>
+                      <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 6V8H5V19H16V14H18V20C18 20.6 17.6 21 17 21H4C3.4 21 3 20.6 3 20V7C3 6.4 3.4 6 4 6H10ZM21 3V11H19V6.4L13.4 12L12 10.6L17.6 5H13V3H21Z" fill="#9197a3"/>
+                      </svg>
+                      <span style={{ color: '#9197a3', fontSize: '12px' }}>Link Preview</span>
                     </div>
                   )}
                   <div style={{ padding: '10px 12px', backgroundColor: '#f7f7f7' }}>
@@ -346,9 +566,9 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                     </div>
                     <div style={{
                       fontSize: '11px', color: '#9197a3', lineHeight: '15px',
-                      marginBottom: '2px',
+                      marginBottom: '2px', textTransform: 'uppercase',
                     }}>
-                      {linkDomain ? linkDomain.toUpperCase() : 'EXAMPLE.COM'}
+                      {linkDomain || 'EXAMPLE.COM'}
                     </div>
                     <div style={{
                       fontSize: '12px', color: '#6d7380', lineHeight: '16px',
@@ -403,72 +623,88 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
               </div>
             )}
 
-            {/* ─── Divider ─── */}
             <div style={{ margin: '0 10px', borderTop: '1px solid #e5e5e5' }} />
 
             {/* ─── Action Bar ─── */}
             <div style={{ display: 'flex', padding: '2px 8px 4px 8px' }}>
-              <button style={actionButtonStyle} onMouseOver={actionHoverOn} onMouseOut={actionHoverOff}>
-                <ThumbsUpIcon size={13} color="#7f7f7f" />
-                Like
-              </button>
-              <button style={actionButtonStyle} onMouseOver={actionHoverOn} onMouseOut={actionHoverOff}>
-                <CommentBubbleIcon size={13} color="#7f7f7f" />
-                Comment
-              </button>
-              <button style={actionButtonStyle} onMouseOver={actionHoverOn} onMouseOut={actionHoverOff}>
-                <ShareArrowIcon size={13} color="#7f7f7f" />
-                Share
-              </button>
+              {['Like', 'Comment', 'Share'].map(label => (
+                <button key={label} style={actionButtonStyle} onMouseOver={actionHoverOn} onMouseOut={actionHoverOff}>
+                  {label === 'Like' && <ThumbsUpIcon size={13} color="#7f7f7f" />}
+                  {label === 'Comment' && <CommentBubbleIcon size={13} color="#7f7f7f" />}
+                  {label === 'Share' && <ShareArrowIcon size={13} color="#7f7f7f" />}
+                  {label}
+                </button>
+              ))}
             </div>
 
-            {/* ─── Comment Preview ─── */}
-            {showCommentPreview && hasComments && (
+            {/* ─── Comment Section ─── */}
+            {showCommentPreview && hasComments && commentsList.length > 0 && (
               <>
                 <div style={{ margin: '0 10px', borderTop: '1px solid #e5e5e5' }} />
                 <div style={{ padding: '8px 12px', backgroundColor: '#fafbfc' }}>
-                  {/* Show 1-2 sample comments */}
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <div style={{
-                      width: '32px', height: '32px', minWidth: '32px',
-                      borderRadius: '2px', overflow: 'hidden',
-                      border: '1px solid #e5e5e5', backgroundColor: '#e9eaed',
+                  {commentsList.map((c, idx) => (
+                    <div key={c.id} style={{
+                      display: 'flex', gap: '8px',
+                      marginBottom: idx < commentsList.length - 1 ? '8px' : '0',
                     }}>
-                      <img src={commenterAvatar || defaultAvatar} alt="" style={{
-                        width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-                      }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        display: 'inline-block', backgroundColor: '#f0f2f5',
-                        borderRadius: '12px', padding: '6px 10px', maxWidth: '100%',
+                        width: '32px', height: '32px', minWidth: '32px',
+                        borderRadius: '2px', overflow: 'hidden',
+                        border: '1px solid #e5e5e5', backgroundColor: '#e9eaed',
                       }}>
+                        <img src={c.commenterAvatar || defaultAvatar} alt="" style={{
+                          width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                        }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          fontSize: '12px', fontWeight: 700, color: '#3b5998',
-                          lineHeight: '14px',
+                          display: 'inline-block', backgroundColor: '#f0f2f5',
+                          borderRadius: '12px', padding: '6px 10px', maxWidth: '100%',
                         }}>
-                          {commenterName || 'Commenter'}
+                          <div style={{
+                            fontSize: '12px', fontWeight: 700, color: '#3b5998',
+                            lineHeight: '14px',
+                          }}>
+                            {c.commenterName || 'Commenter'}
+                          </div>
+                          <div style={{
+                            fontSize: '12px', color: '#1d2129',
+                            lineHeight: '16px', marginTop: '1px',
+                          }}>
+                            {c.commentText || 'Great post!'}
+                          </div>
                         </div>
                         <div style={{
-                          fontSize: '12px', color: '#1d2129',
-                          lineHeight: '16px', marginTop: '1px',
+                          fontSize: '11px', color: '#9197a3', marginTop: '2px',
+                          paddingLeft: '10px', display: 'flex', gap: '10px', alignItems: 'center',
                         }}>
-                          {commentText || 'Great post!'}
+                          <span style={{ cursor: 'pointer', fontWeight: 600 }}>Like</span>
+                          <span style={{ cursor: 'pointer' }}>Reply</span>
+                          <span>{c.commentTimestamp || '2 hrs'}</span>
+                          {c.commentLikes > 0 && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <span>·</span>
+                              <FilledThumbsUp size={9} />
+                              <span>{c.commentLikes}</span>
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div style={{
-                        fontSize: '11px', color: '#9197a3', marginTop: '2px',
-                        paddingLeft: '10px', display: 'flex', gap: '10px',
-                      }}>
-                        <span style={{ cursor: 'pointer', fontWeight: 600 }}>Like</span>
-                        <span style={{ cursor: 'pointer' }}>Reply</span>
-                        <span>{commentTimestamp || '2 hrs'}</span>
-                      </div>
                     </div>
-                  </div>
+                  ))}
+
+                  {/* "See more comments" if comment count > commentsList length */}
+                  {comments > commentsList.length && (
+                    <div style={{
+                      fontSize: '12px', fontWeight: 600, color: '#3b5998',
+                      cursor: 'pointer', padding: '4px 0 4px 40px',
+                    }}>
+                      View all {comments} comments
+                    </div>
+                  )}
 
                   {/* "Write a comment" input */}
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
                     <div style={{
                       width: '28px', height: '28px', minWidth: '28px',
                       borderRadius: '2px', overflow: 'hidden',
@@ -481,7 +717,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                     <div style={{
                       flex: 1, backgroundColor: '#ffffff', border: '1px solid #ccd0d5',
                       borderRadius: '14px', padding: '6px 12px', fontSize: '12px',
-                      color: '#bcc0c4', cursor: 'text',
+                      color: '#bcc0c4',
                     }}>
                       Write a comment...
                     </div>
@@ -508,7 +744,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                     <div style={{
                       flex: 1, backgroundColor: '#ffffff', border: '1px solid #ccd0d5',
                       borderRadius: '14px', padding: '6px 12px', fontSize: '12px',
-                      color: '#bcc0c4', cursor: 'text',
+                      color: '#bcc0c4',
                     }}>
                       Write a comment...
                     </div>
@@ -518,6 +754,18 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
             )}
           </div>
         </div>
+
+        {/* ─── FB Footer ─── */}
+        {showNavBar && (
+          <div style={{
+            width: '100%', backgroundColor: '#e9eaed',
+            borderTop: '1px solid #dddfe2',
+            padding: '12px 20px', textAlign: 'center',
+            fontSize: '11px', color: '#9197a3',
+          }}>
+            Facebook &copy; 2014 &middot; English (US) &middot; Privacy &middot; Terms &middot; Cookies &middot; Advertising &middot; Help
+          </div>
+        )}
       </div>
     )
   }

@@ -95,48 +95,117 @@ Stage Summary:
 - All QA tests pass with zero errors
 
 ---
+Task ID: 3
+Agent: WebDevReview Cron Agent (Round 2)
+Task: QA, major feature expansion, and advanced styling
+
+Work Log:
+- Read worklog, reviewed all source files, ran QA with agent-browser — all clean
+- **Major rewrite of `fb-post-preview.tsx`** with these new features:
+  - **Facebook Navigation Bar** (`FacebookNavBar` component): authentic 2014 top nav bar with:
+    - Facebook "f" logo in white box
+    - Search bar (gray, placeholder "Search")
+    - Center navigation links: Home (active, white, underlined), Profile, Friends, Messages
+    - Right side: user avatar, user name (truncated), hamburger menu, notification bell
+    - Exact #3b5998 blue background, #4e69a2 dark blue for menu icons
+  - **Facebook Footer**: "Facebook © 2014 · English (US) · Privacy · Terms · Cookies · Advertising · Help" in gray
+  - **Hashtag highlighting**: `#hashtags` render in Facebook blue (#3b5998, bold) when enabled
+  - **See More / See Less**: long posts (>280 chars) truncate with "See More" link; clicking expands
+  - **Multiple comments support** (`CommentData` type with id, name, avatar, text, timestamp, likes):
+    - Each comment shows: avatar, chat bubble, name (blue, bold), text, Like/Reply/timestamp/actions
+    - Comment likes count with thumbs-up icon
+    - "View all X comments" link when comments count > visible list
+  - **Lock icon**: Only Me visibility now shows a proper lock icon
+  - **Improved link preview placeholder**: SVG arrow icon + "Link Preview" text (no emoji)
+  - **"View all X comments"**: auto-generated when total comments > shown comments count
+  - Better domain display with `textTransform: 'uppercase'`
+  - 6 presets (up from 4): Coffee & Vibes, Birthday, Shared Link, Achievement, **Throwback**, **Full Screenshot**
+  - Full Screenshot preset has `showNavBar: true` + `highlightHashtags: true`
+  - Throwback preset has 3 comments and hashtags
+- **Major rewrite of `fb-post-generator.tsx`**:
+  - **Advanced Options section** (collapsible):
+    - Facebook Nav Bar toggle (On/Off) — adds the classic blue navbar to screenshot
+    - Highlight Hashtags toggle (On/Off)
+    - Truncate Long Posts toggle (On/Off) — enables See More for >280 chars
+  - **Multiple comments CRUD**:
+    - "Add" button to add new comments
+    - Each comment is a card with: avatar upload, name input, text input, timestamp input, likes count
+    - Delete (trash) button per comment (when >1 comment)
+    - Comment count badge on section header
+  - **Emoji picker**: quick emoji toolbar (24 emojis) toggled by 😊 button next to char counter
+  - **Export resolution options**: PNG 3x (primary), PNG 2x, JPEG 3x, Copy to clipboard
+  - **Scrollable editor panel**: `lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto` with thin scrollbar
+  - **New preset grid**: 3-column layout with emoji icons above preset names
+  - **Lock icon** in visibility options
+  - **Full Screenshot badge**: shows in preview header when nav bar is enabled
+  - **Bug fix**: Replaced `<Label>` with `<div>` inside `<button>` for collapsible section headers to fix click event propagation (Label inside button is invalid HTML)
+- **QA verification**:
+  - ESLint: clean
+  - No console errors
+  - All presets load correctly
+  - Facebook Nav Bar renders with authentic 2014 look
+  - Hashtag highlighting works (blue, bold)
+  - See More/See Less truncation works
+  - Multiple comments render with correct avatars and text
+  - "View all X comments" shows correctly
+  - Emoji picker inserts emojis into post content
+  - Comment CRUD (add, edit, remove) works
+  - Mobile responsive (iPhone 12) verified
+  - Note: agent-browser has difficulty clicking nested button elements; JS `.click()` workaround confirmed all features work
+
+Stage Summary:
+- **Version 3.0** — Major feature expansion
+- 10+ new features: Facebook Nav Bar, hashtag highlighting, See More/See Less, multiple comments, emoji picker, advanced options panel, export resolution options, 2 new presets, lock icon for Only Me, scrollable editor
+- Post preview can now produce **full Facebook screenshots** (nav bar + post + footer)
+- All QA tests pass
+
+---
 ## Project Status Assessment
 
-**Current Status:** ✅ v2.0 - Feature-rich and stable
+**Current Status:** ✅ v3.0 — Feature-complete and stable
 
-**Completed Features (v1.0 + v2.0):**
+**Completed Features (v1.0 + v2.0 + v3.0):**
 - Profile picture upload with default avatar fallback
 - User name, timestamp, post content editing
-- Visibility selector (Public / Friends / Only Me)
+- Visibility selector (Public / Friends / Only Me) with correct icons
 - Optional attached photo upload
 - Engagement metrics (likes, comments, shares) with "Top Liker Name"
 - Shared link preview with title/domain/description/image
-- Comment preview with commenter avatar/name/text/timestamp
-- "Write a comment..." input always visible
-- 4 quick presets (Coffee, Birthday, Shared Link, Achievement)
-- Download as PNG (3x scale) or JPEG
-- Copy to clipboard
+- **Multiple comments support** (add, edit, remove, per-comment likes)
+- **Facebook navigation bar** in preview (authentic 2014 look with search, nav links, user menu)
+- **Facebook footer** in screenshot mode
+- **Hashtag highlighting** in blue
+- **See More / See Less** for long posts
+- **Emoji picker** (24 quick-access emojis)
+- **Advanced Options panel** (nav bar, hashtags, truncate toggles)
+- **6 quick presets** (Coffee, Birthday, Shared Link, Achievement, Throwback, Full Screenshot)
+- **Multiple export options**: PNG 3x, PNG 2x, JPEG 3x, Copy to clipboard
 - Character counter (63,206 limit)
 - Reset all fields
-- Collapsible advanced sections
-- Real-time live preview with authentic 2014 styling
-- Responsive two-panel layout (desktop priority, mobile-friendly)
+- Collapsible advanced sections with scrollable editor
 - Toast notifications for user feedback
+- Responsive two-panel layout
 
 **Technical Details:**
 - Next.js 16 with App Router
 - TypeScript throughout
 - Tailwind CSS + inline styles for 2014 accuracy
-- html2canvas for image export (3x scale)
+- html2canvas for image export (configurable scale)
 - Lucide React icons for editor UI
 - Custom inline SVGs for 2014 Facebook icons (html2canvas compatible)
-- useToast for notifications
+- CommentData type for multiple comments
+- FBPostData includes: showNavBar, highlightHashtags, truncateLongPosts
 
 ---
 ## Potential Improvements for Next Phase
 
-1. **Dark theme toggle for editor UI** (keeping preview in classic FB style)
-2. **Mobile preview mode** showing how post looks on a phone screen
-3. **Multiple comments preview** (2-3 comments instead of just 1)
-4. **Emoji picker** for post content
-5. **Post type templates**: Life Event, Check-in, Tagged photo, Shared video
-6. **Font customization**: allow choosing between different 2014-era fonts
-7. **Undo/redo** for editing
-8. **Watermark toggle**: optional "Generated by..." watermark
-9. **Shareable URL**: encode post data in URL params for sharing
-10. **More granular timestamp options**: relative time (2 hrs, Yesterday) vs absolute
+1. **Comment reply threads** — nested replies under comments
+2. **More post types**: Life Event, Check-in, Tagged photo, Shared video
+3. **Font customization**: choose between different 2014-era fonts
+4. **Undo/redo** for editing
+5. **Watermark toggle**: optional "Generated by..." watermark
+6. **Shareable URL**: encode post data in URL params for sharing
+7. **Facebook-style reactions** (pre-2016: only thumbs up)
+8. **Custom background color** for the Facebook page
+9. **Drag-and-drop** image uploads
+10. **Timestamp presets**: "Just now", "2 hrs", "Yesterday", "X minutes ago"

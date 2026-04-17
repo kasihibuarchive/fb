@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { FBPostPreview, type FBPostData, type VisibilityOption, defaultPostData, presets } from './fb-post-preview'
+import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, defaultPostData, defaultComment, presets } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,48 +11,56 @@ import { Separator } from '@/components/ui/separator'
 import {
   ImagePlus, Download, User, Clock, Type, Heart, MessageSquare, Share2,
   X, Upload, Globe, Users, Lock, RotateCcw, Copy, ImageIcon, Link, MessageCircle,
-  Sparkles, ChevronDown, ChevronUp, ExternalLink, FileImage
+  Sparkles, ChevronDown, ChevronUp, ExternalLink, FileImage, Monitor, Smartphone,
+  Plus, Trash2, Hash, Scissors
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+
+const quickEmojis = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','❤️','🔥','🎉','💯','✨','🙏','💪','👀','🙏','😂','😍','🥺','🤣','😭']
 
 export default function FBPostGenerator() {
   const previewRef = useRef<HTMLDivElement>(null)
   const profileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const linkImageInputRef = useRef<HTMLInputElement>(null)
-  const commenterAvatarInputRef = useRef<HTMLInputElement>(null)
+  const commenterAvatarInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const [postData, setPostData] = useState<FBPostData>(defaultPostData)
   const [isDownloading, setIsDownloading] = useState(false)
-  const [expandedSections, setExpandedSections] = useState({
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     link: false,
     comment: false,
+    advanced: false,
   })
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const { toast } = useToast()
 
   const updateField = useCallback(<K extends keyof FBPostData>(field: K, value: FBPostData[K]) => {
     setPostData(prev => ({ ...prev, [field]: value }))
   }, [])
 
-  const toggleSection = useCallback((section: 'link' | 'comment') => {
+  const toggleSection = useCallback((section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }, [])
 
   const applyPreset = useCallback((data: FBPostData) => {
     setPostData(data)
+    setExpandedSections({ link: data.sharedLink, comment: data.showCommentPreview, advanced: false })
     toast({ title: 'Preset applied!', description: 'Post template loaded successfully.' })
   }, [toast])
 
   const resetAll = useCallback(() => {
     setPostData(defaultPostData)
-    setExpandedSections({ link: false, comment: false })
+    setExpandedSections({ link: false, comment: false, advanced: false })
+    setShowEmojiPicker(false)
     if (profileInputRef.current) profileInputRef.current.value = ''
     if (imageInputRef.current) imageInputRef.current.value = ''
     if (linkImageInputRef.current) linkImageInputRef.current.value = ''
-    if (commenterAvatarInputRef.current) commenterAvatarInputRef.current.value = ''
+    commenterAvatarInputRefs.current = {}
     toast({ title: 'Reset complete', description: 'All fields have been reset to defaults.' })
   }, [toast])
 
+  // ── Upload handlers ──
   const handleProfileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) updateField('profilePicture', URL.createObjectURL(file))
@@ -68,10 +76,17 @@ export default function FBPostGenerator() {
     if (file) updateField('linkImage', URL.createObjectURL(file))
   }, [updateField])
 
-  const handleCommenterAvatarUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCommenterAvatarUpload = useCallback((id: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) updateField('commenterAvatar', URL.createObjectURL(file))
-  }, [updateField])
+    if (file) {
+      setPostData(prev => ({
+        ...prev,
+        commentsList: prev.commentsList.map(c =>
+          c.id === id ? { ...c, commenterAvatar: URL.createObjectURL(file) } : c
+        ),
+      }))
+    }
+  }, [])
 
   const removeProfilePicture = useCallback(() => {
     updateField('profilePicture', '/fb-default-avatar.svg')
@@ -88,22 +103,41 @@ export default function FBPostGenerator() {
     if (linkImageInputRef.current) linkImageInputRef.current.value = ''
   }, [updateField])
 
-  const removeCommenterAvatar = useCallback(() => {
-    updateField('commenterAvatar', '/fb-default-avatar.svg')
-    if (commenterAvatarInputRef.current) commenterAvatarInputRef.current.value = ''
-  }, [updateField])
+  // ── Comment CRUD ──
+  const addComment = useCallback(() => {
+    const newComment: CommentData = {
+      id: Date.now().toString(),
+      commenterName: 'New Friend',
+      commenterAvatar: '/fb-default-avatar.svg',
+      commentText: 'This is awesome!',
+      commentTimestamp: 'Just now',
+      commentLikes: 0,
+    }
+    updateField('commentsList', [...postData.commentsList, newComment])
+    if (!postData.showCommentPreview) updateField('showCommentPreview', true)
+  }, [postData.commentsList, postData.showCommentPreview, updateField])
 
-  const handleDownload = useCallback(async (format: 'png' | 'jpeg') => {
+  const removeComment = useCallback((id: string) => {
+    const newList = postData.commentsList.filter(c => c.id !== id)
+    updateField('commentsList', newList)
+    if (newList.length === 0) updateField('showCommentPreview', false)
+  }, [postData.commentsList, updateField])
+
+  const updateComment = useCallback((id: string, field: keyof CommentData, value: string | number) => {
+    updateField('commentsList', postData.commentsList.map(c =>
+      c.id === id ? { ...c, [field]: value } : c
+    ))
+  }, [postData.commentsList, updateField])
+
+  // ── Downloads ──
+  const handleDownload = useCallback(async (format: 'png' | 'jpeg', scale: number) => {
     if (!previewRef.current || isDownloading) return
     setIsDownloading(true)
     try {
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(previewRef.current, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#e9eaed',
-        logging: false,
+        scale, useCORS: true, allowTaint: true,
+        backgroundColor: '#e9eaed', logging: false,
       })
       const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
       const ext = format === 'jpeg' ? 'jpg' : 'png'
@@ -111,10 +145,10 @@ export default function FBPostGenerator() {
       link.download = `facebook-post-2014-${Date.now()}.${ext}`
       link.href = canvas.toDataURL(mimeType, 0.95)
       link.click()
-      toast({ title: 'Downloaded!', description: `Image saved as ${ext.toUpperCase()}` })
+      toast({ title: 'Downloaded!', description: `${ext.toUpperCase()} at ${scale}x resolution` })
     } catch (err) {
       console.error('Failed to generate image:', err)
-      toast({ title: 'Error', description: 'Failed to generate image. Please try again.', variant: 'destructive' })
+      toast({ title: 'Error', description: 'Failed to generate image.', variant: 'destructive' })
     } finally {
       setIsDownloading(false)
     }
@@ -134,7 +168,7 @@ export default function FBPostGenerator() {
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
             toast({ title: 'Copied!', description: 'Image copied to clipboard.' })
           } catch {
-            toast({ title: 'Not supported', description: 'Clipboard API is not available in this browser.', variant: 'destructive' })
+            toast({ title: 'Not supported', description: 'Clipboard API unavailable.', variant: 'destructive' })
           }
         }
       })
@@ -143,19 +177,27 @@ export default function FBPostGenerator() {
     }
   }, [toast])
 
+  // ── Emoji ──
+  const insertEmoji = useCallback((emoji: string) => {
+    updateField('postContent', postData.postContent + emoji)
+    setShowEmojiPicker(false)
+  }, [postData.postContent, updateField])
+
   const visibilityOptions: { value: VisibilityOption; label: string; icon: React.ReactNode }[] = [
-    { value: 'public', label: 'Public', icon: <Globe className="w-3.5 h-3.5" /> },
-    { value: 'friends', label: 'Friends', icon: <Users className="w-3.5 h-3.5" /> },
-    { value: 'onlyme', label: 'Only Me', icon: <Lock className="w-3.5 h-3.5" /> },
+    { value: 'public', label: 'Public', icon: <Globe className="w-3 h-3" /> },
+    { value: 'friends', label: 'Friends', icon: <Users className="w-3 h-3" /> },
+    { value: 'onlyme', label: 'Only Me', icon: <Lock className="w-3 h-3" /> },
   ]
 
   const charCount = postData.postContent.length
+
+  const fileInputStyle: React.CSSProperties = { borderColor: '#ccd0d5', fontSize: '12px' }
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f0f2f5' }}>
       {/* ──── Header ──── */}
       <header className="sticky top-0 z-50 w-full border-b" style={{
-        backgroundColor: 'linear-gradient(to bottom, #4267B2, #3b5998)',
+        background: 'linear-gradient(180deg, #4a6fb5 0%, #3b5998 100%)',
         borderColor: '#2d4373',
       }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
@@ -174,15 +216,15 @@ export default function FBPostGenerator() {
               }}>
                 2014 Facebook Post Generator
               </h1>
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.65)' }}>
-                Create nostalgic Facebook posts &middot; Download as image
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)' }}>
+                Create nostalgic posts &middot; Download as screenshot
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded font-medium"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
-              v2.0
+              v3.0
             </span>
           </div>
         </div>
@@ -191,30 +233,32 @@ export default function FBPostGenerator() {
       {/* ──── Main Content ──── */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-          {/* ═══ Left Panel - Editor ═══ */}
+          {/* ═══ Left Panel ═══ */}
           <div className="lg:col-span-5 xl:col-span-4">
-            <div className="sticky top-16 space-y-4">
+            <div className="lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:sticky lg:top-16 space-y-4 pr-1" style={{ scrollbarWidth: 'thin' }}>
+
               {/* ─── Presets ─── */}
               <Card className="border shadow-sm" style={{ borderColor: '#dddfe2' }}>
-                <CardHeader className="pb-3 pt-4 px-4">
-                  <CardTitle className="text-sm font-bold flex items-center gap-2"
+                <CardHeader className="pb-3 pt-3 px-4">
+                  <CardTitle className="text-xs font-bold flex items-center gap-1.5"
                     style={{ color: '#1d2129', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                    <Sparkles className="w-4 h-4" style={{ color: '#3b5998' }} />
+                    <Sparkles className="w-3.5 h-3.5" style={{ color: '#3b5998' }} />
                     Quick Presets
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-4 pb-4">
-                  <div className="grid grid-cols-2 gap-2">
+                <CardContent className="px-4 pb-3">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {presets.map((preset, i) => (
                       <button key={i} onClick={() => applyPreset(preset.data)}
-                        className="text-left text-xs font-medium px-3 py-2 rounded border transition-all duration-150 hover:shadow-sm"
+                        className="text-center text-xs font-medium px-2 py-1.5 rounded border transition-all duration-150"
                         style={{
                           borderColor: '#e5e5e5', backgroundColor: '#fafbfc', color: '#4b4f56',
-                          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: '10px',
                         }}
                         onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#a8c7fa' }}
                         onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fafbfc'; e.currentTarget.style.borderColor = '#e5e5e5' }}
                       >
+                        <span className="block text-base mb-0.5">{preset.emoji}</span>
                         {preset.name}
                       </button>
                     ))}
@@ -224,94 +268,89 @@ export default function FBPostGenerator() {
 
               {/* ─── Editor ─── */}
               <Card className="border shadow-sm" style={{ borderColor: '#dddfe2' }}>
-                <CardHeader className="pb-4 pt-4 px-4">
+                <CardHeader className="pb-3 pt-3 px-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-bold flex items-center gap-2"
+                    <CardTitle className="text-xs font-bold flex items-center gap-1.5"
                       style={{ color: '#1d2129', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M15 3l2 2-8.5 8.5H6.5v-2L15 3z" stroke="#3b5998" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         <rect x="3" y="16" width="14" height="1" rx="0.5" fill="#3b5998" opacity="0.3"/>
                       </svg>
                       Post Editor
                     </CardTitle>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs"
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs"
                       style={{ color: '#8a8d91' }} onClick={resetAll}>
                       <RotateCcw className="w-3 h-3 mr-1" /> Reset
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4 px-4 pb-4">
+                <CardContent className="space-y-3.5 px-4 pb-4">
                   {/* Profile Picture */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold flex items-center gap-1.5"
-                      style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                      <User className="w-3.5 h-3.5" /> Profile Picture
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold flex items-center gap-1"
+                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      <User className="w-3 h-3" /> Profile Picture
                     </Label>
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-sm overflow-hidden border flex-shrink-0 cursor-pointer"
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-sm overflow-hidden border flex-shrink-0 cursor-pointer"
                         style={{ borderColor: '#ccd0d5', backgroundColor: '#e9eaed' }}
                         onClick={() => profileInputRef.current?.click()}>
                         <img src={postData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                       </div>
-                      <div className="flex gap-1.5 flex-1">
+                      <div className="flex gap-1 flex-1">
                         <Button type="button" variant="outline" size="sm" className="flex-1 text-xs gap-1"
-                          style={{ borderColor: '#ccd0d5', color: '#4b4f56', fontSize: '11px' }}
+                          style={{ borderColor: '#ccd0d5', color: '#4b4f56', fontSize: '10px', height: '30px' }}
                           onClick={() => profileInputRef.current?.click()}>
                           <Upload className="w-3 h-3" /> Upload
                         </Button>
                         {postData.profilePicture !== '/fb-default-avatar.svg' && (
                           <Button type="button" variant="ghost" size="sm"
                             className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50 px-1.5"
+                            style={{ height: '30px', width: '30px', padding: 0 }}
                             onClick={removeProfilePicture}>
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3" />
                           </Button>
                         )}
                       </div>
-                      <input ref={profileInputRef} type="file" accept="image/*" className="hidden"
-                        onChange={handleProfileUpload} />
+                      <input ref={profileInputRef} type="file" accept="image/*" className="hidden" onChange={handleProfileUpload} />
                     </div>
                   </div>
 
                   <Separator style={{ backgroundColor: '#eee' }} />
 
                   {/* User Name */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold flex items-center gap-1.5"
-                      style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                      <User className="w-3.5 h-3.5" /> Display Name
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold flex items-center gap-1"
+                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      <User className="w-3 h-3" /> Display Name
                     </Label>
                     <Input type="text" placeholder="Enter Facebook name"
-                      value={postData.userName}
-                      onChange={(e) => updateField('userName', e.target.value)}
-                      className="text-sm h-8" style={{ borderColor: '#ccd0d5', fontSize: '13px' }} />
+                      value={postData.userName} onChange={(e) => updateField('userName', e.target.value)}
+                      className="text-sm h-8" style={fileInputStyle} />
                   </div>
 
                   {/* Timestamp + Visibility */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold flex items-center gap-1.5"
-                        style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                        <Clock className="w-3.5 h-3.5" /> Timestamp
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold flex items-center gap-1"
+                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        <Clock className="w-3 h-3" /> Timestamp
                       </Label>
                       <Input type="text" placeholder="Oct 12, 2014"
-                        value={postData.timestamp}
-                        onChange={(e) => updateField('timestamp', e.target.value)}
-                        className="text-sm h-8" style={{ borderColor: '#ccd0d5', fontSize: '13px' }} />
+                        value={postData.timestamp} onChange={(e) => updateField('timestamp', e.target.value)}
+                        className="text-sm h-8" style={fileInputStyle} />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold"
-                        style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                        Visibility
-                      </Label>
-                      <div className="flex gap-1">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-semibold" style={{ color: '#4b4f56', fontSize: '11px' }}>Visibility</Label>
+                      <div className="flex gap-0.5">
                         {visibilityOptions.map(opt => (
                           <button key={opt.value} onClick={() => updateField('visibility', opt.value)}
-                            className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded border text-xs font-medium transition-all"
+                            className="flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded border text-xs font-medium transition-all"
                             style={{
                               borderColor: postData.visibility === opt.value ? '#3b5998' : '#e5e5e5',
                               backgroundColor: postData.visibility === opt.value ? '#e7f3ff' : '#fafbfc',
                               color: postData.visibility === opt.value ? '#3b5998' : '#8a8d91',
-                              fontSize: '10px',
+                              fontSize: '9px',
                             }}>
                             {opt.icon} {opt.label}
                           </button>
@@ -322,132 +361,134 @@ export default function FBPostGenerator() {
 
                   <Separator style={{ backgroundColor: '#eee' }} />
 
-                  {/* Post Content */}
-                  <div className="space-y-1.5">
+                  {/* Post Content with Emoji */}
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-semibold flex items-center gap-1.5"
-                        style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                        <Type className="w-3.5 h-3.5" /> Post Content
+                      <Label className="text-xs font-semibold flex items-center gap-1"
+                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        <Type className="w-3 h-3" /> Post Content
                       </Label>
-                      <span className="text-xs" style={{
-                        color: charCount > 63206 ? '#e41e3f' : '#bcc0c4', fontSize: '10px',
-                      }}>
-                        {charCount > 63206 ? '63,206 limit exceeded' : `${charCount.toLocaleString()} / 63,206`}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs" style={{
+                          color: charCount > 63206 ? '#e41e3f' : '#bcc0c4', fontSize: '9px',
+                        }}>
+                          {charCount > 63206 ? 'Limit exceeded' : `${charCount.toLocaleString()}/63,206`}
+                        </span>
+                        <div className="relative">
+                          <button className="p-0.5 rounded" style={{ color: '#bcc0c4' }}
+                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                            <span style={{ fontSize: '14px', lineHeight: 1 }}>😊</span>
+                          </button>
+                          {showEmojiPicker && (
+                            <div className="absolute right-0 top-full mt-1 z-50 p-2 border rounded-lg shadow-lg"
+                              style={{ backgroundColor: '#fff', borderColor: '#dddfe2', width: '220px' }}>
+                              <div className="grid grid-cols-8 gap-0.5">
+                                {quickEmojis.map((em, i) => (
+                                  <button key={i} className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-sm"
+                                    onClick={() => insertEmoji(em)}>
+                                    {em}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <Textarea placeholder="What's on your mind?"
-                      value={postData.postContent}
-                      onChange={(e) => updateField('postContent', e.target.value)}
-                      rows={4} className="text-sm resize-none"
-                      style={{ borderColor: '#ccd0d5', fontSize: '13px', lineHeight: '1.5' }} />
+                      value={postData.postContent} onChange={(e) => updateField('postContent', e.target.value)}
+                      rows={4} className="text-sm resize-none" style={{ ...fileInputStyle, fontSize: '13px', lineHeight: '1.5' }} />
                   </div>
 
                   {/* Attached Image */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold flex items-center gap-1.5"
-                      style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                      <ImageIcon className="w-3.5 h-3.5" /> Attached Photo
-                      <span style={{ color: '#bcc0c4', fontWeight: 400 }}>(optional)</span>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold flex items-center gap-1"
+                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      <ImageIcon className="w-3 h-3" /> Attached Photo
+                      <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>(optional)</span>
                     </Label>
                     {postData.attachedImage ? (
                       <div className="relative rounded overflow-hidden border" style={{ borderColor: '#ccd0d5' }}>
-                        <img src={postData.attachedImage} alt="" className="w-full max-h-36 object-cover" />
-                        <button className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-white"
-                          style={{ backgroundColor: 'rgba(0,0,0,0.6)', fontSize: '10px' }}
-                          onClick={removeAttachedImage}>
+                        <img src={postData.attachedImage} alt="" className="w-full max-h-32 object-cover" />
+                        <button className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-white"
+                          style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onClick={removeAttachedImage}>
                           <X className="w-3 h-3" />
                         </button>
                       </div>
                     ) : (
-                      <button className="w-full h-20 border border-dashed rounded flex flex-col items-center justify-center gap-1 transition-colors"
+                      <button className="w-full h-16 border border-dashed rounded flex flex-col items-center justify-center gap-0.5 transition-colors"
                         style={{ borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#bcc0c4', cursor: 'pointer' }}
                         onClick={() => imageInputRef.current?.click()}
                         onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#a8c7fa' }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fafbfc'; e.currentTarget.style.borderColor = '#ccd0d5' }}
-                      >
-                        <ImagePlus className="w-5 h-5" />
-                        <span style={{ fontSize: '11px' }}>Click to add a photo</span>
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fafbfc'; e.currentTarget.style.borderColor = '#ccd0d5' }}>
+                        <ImagePlus className="w-4 h-4" />
+                        <span style={{ fontSize: '10px' }}>Click to add a photo</span>
                       </button>
                     )}
-                    <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
-                      onChange={handleImageUpload} />
+                    <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </div>
 
                   <Separator style={{ backgroundColor: '#eee' }} />
 
                   {/* ─── Shared Link Section ─── */}
                   <div>
-                    <button className="w-full flex items-center justify-between py-1"
-                      onClick={() => toggleSection('link')}>
-                      <Label className="text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                        style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                        <Link className="w-3.5 h-3.5" /> Shared Link
-                        <span style={{ color: '#bcc0c4', fontWeight: 400 }}>(optional)</span>
-                      </Label>
-                      {expandedSections.link
-                        ? <ChevronUp className="w-3.5 h-3.5" style={{ color: '#bcc0c4' }} />
-                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: '#bcc0c4' }} />
-                      }
+                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('link')}>
+                      <div className="text-xs font-semibold flex items-center gap-1"
+                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        <Link className="w-3 h-3" /> Shared Link
+                        <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>(optional)</span>
+                      </div>
+                      {expandedSections.link ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
                     </button>
-                    <div className="flex items-center gap-2 mb-2">
-                      <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded border text-xs font-medium transition-all"
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <button className="flex-1 flex items-center justify-center gap-1 py-1 rounded border text-xs font-medium transition-all"
                         style={{
                           borderColor: postData.sharedLink ? '#3b5998' : '#e5e5e5',
                           backgroundColor: postData.sharedLink ? '#e7f3ff' : '#fafbfc',
-                          color: postData.sharedLink ? '#3b5998' : '#8a8d91',
-                          fontSize: '11px',
-                        }}
-                        onClick={() => updateField('sharedLink', !postData.sharedLink)}>
+                          color: postData.sharedLink ? '#3b5998' : '#8a8d91', fontSize: '10px',
+                        }} onClick={() => updateField('sharedLink', !postData.sharedLink)}>
                         <ExternalLink className="w-3 h-3" />
                         {postData.sharedLink ? 'Link Enabled' : 'Enable Link'}
                       </button>
                     </div>
-
                     {expandedSections.link && (
-                      <div className="space-y-3 pl-1">
-                        <div className="space-y-1">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '11px' }}>Link Title</Label>
-                          <Input type="text" placeholder="Page title"
-                            value={postData.linkTitle}
+                      <div className="space-y-2 pl-0.5">
+                        <div className="space-y-0.5">
+                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Link Title</Label>
+                          <Input type="text" placeholder="Page title" value={postData.linkTitle}
                             onChange={(e) => updateField('linkTitle', e.target.value)}
-                            className="text-sm h-8" style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
+                            className="text-sm h-7" style={fileInputStyle} />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '11px' }}>Domain</Label>
-                          <Input type="text" placeholder="example.com"
-                            value={postData.linkDomain}
+                        <div className="space-y-0.5">
+                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Domain</Label>
+                          <Input type="text" placeholder="example.com" value={postData.linkDomain}
                             onChange={(e) => updateField('linkDomain', e.target.value)}
-                            className="text-sm h-8" style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
+                            className="text-sm h-7" style={fileInputStyle} />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '11px' }}>Description</Label>
-                          <Textarea placeholder="Link description..."
-                            value={postData.linkDescription}
+                        <div className="space-y-0.5">
+                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Description</Label>
+                          <Textarea placeholder="Link description..." value={postData.linkDescription}
                             onChange={(e) => updateField('linkDescription', e.target.value)}
-                            rows={2} className="text-sm resize-none"
-                            style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
+                            rows={2} className="text-sm resize-none" style={fileInputStyle} />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '11px' }}>Link Image</Label>
+                        <div className="space-y-0.5">
+                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Link Image</Label>
                           {postData.linkImage ? (
                             <div className="relative rounded overflow-hidden border" style={{ borderColor: '#ccd0d5' }}>
-                              <img src={postData.linkImage} alt="" className="w-full max-h-24 object-cover" />
-                              <button className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-white"
-                                style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
-                                onClick={removeLinkImage}>
-                                <X className="w-3 h-3" />
+                              <img src={postData.linkImage} alt="" className="w-full max-h-20 object-cover" />
+                              <button className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white"
+                                style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onClick={removeLinkImage}>
+                                <X className="w-2.5 h-2.5" />
                               </button>
                             </div>
                           ) : (
-                            <button className="w-full h-14 border border-dashed rounded flex items-center justify-center gap-1.5"
-                              style={{ borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#bcc0c4', cursor: 'pointer' }}
+                            <button className="w-full h-10 border border-dashed rounded flex items-center justify-center gap-1"
+                              style={{ borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#bcc0c4', cursor: 'pointer', fontSize: '10px' }}
                               onClick={() => linkImageInputRef.current?.click()}>
-                              <FileImage className="w-4 h-4" />
-                              <span style={{ fontSize: '11px' }}>Add link image</span>
+                              <FileImage className="w-3.5 h-3.5" /> Add link image
                             </button>
                           )}
-                          <input ref={linkImageInputRef} type="file" accept="image/*" className="hidden"
-                            onChange={handleLinkImageUpload} />
+                          <input ref={linkImageInputRef} type="file" accept="image/*" className="hidden" onChange={handleLinkImageUpload} />
                         </div>
                       </div>
                     )}
@@ -456,117 +497,183 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: '#eee' }} />
 
                   {/* ─── Engagement Metrics ─── */}
-                  <div className="space-y-2.5">
-                    <Label className="text-xs font-semibold"
-                      style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                      Engagement Metrics
-                    </Label>
-                    <div className="grid grid-cols-3 gap-2.5">
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1" style={{ color: '#8a8d91', fontSize: '10px' }}>
-                          <Heart className="w-3 h-3" style={{ color: '#3b5998' }} /> Likes
-                        </Label>
-                        <Input type="number" min={0}
-                          value={postData.likes}
-                          onChange={(e) => updateField('likes', Math.max(0, parseInt(e.target.value) || 0))}
-                          className="text-sm text-center h-8" style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1" style={{ color: '#8a8d91', fontSize: '10px' }}>
-                          <MessageSquare className="w-3 h-3" style={{ color: '#3b5998' }} /> Comments
-                        </Label>
-                        <Input type="number" min={0}
-                          value={postData.comments}
-                          onChange={(e) => updateField('comments', Math.max(0, parseInt(e.target.value) || 0))}
-                          className="text-sm text-center h-8" style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs flex items-center gap-1" style={{ color: '#8a8d91', fontSize: '10px' }}>
-                          <Share2 className="w-3 h-3" style={{ color: '#3b5998' }} /> Shares
-                        </Label>
-                        <Input type="number" min={0}
-                          value={postData.shares}
-                          onChange={(e) => updateField('shares', Math.max(0, parseInt(e.target.value) || 0))}
-                          className="text-sm text-center h-8" style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
-                      </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold" style={{ color: '#4b4f56', fontSize: '11px' }}>Engagement Metrics</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[{ field: 'likes' as const, label: 'Likes', icon: Heart },
+                        { field: 'comments' as const, label: 'Comments', icon: MessageSquare },
+                        { field: 'shares' as const, label: 'Shares', icon: Share2 }
+                      ].map(item => (
+                        <div key={item.field} className="space-y-0.5">
+                          <Label className="text-xs flex items-center gap-0.5" style={{ color: '#8a8d91', fontSize: '10px' }}>
+                            <item.icon className="w-2.5 h-2.5" style={{ color: '#3b5998' }} /> {item.label}
+                          </Label>
+                          <Input type="number" min={0} value={postData[item.field]}
+                            onChange={(e) => updateField(item.field, Math.max(0, parseInt(e.target.value) || 0))}
+                            className="text-sm text-center h-7" style={fileInputStyle} />
+                        </div>
+                      ))}
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>
-                        Top Liker Name (shows &quot;Name and X others&quot;)
+                        Top Liker Name
                       </Label>
-                      <Input type="text" placeholder="e.g. Jane Smith"
-                        value={postData.topLikerName}
+                      <Input type="text" placeholder="e.g. Jane Smith" value={postData.topLikerName}
                         onChange={(e) => updateField('topLikerName', e.target.value)}
-                        className="text-sm h-8" style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
+                        className="text-sm h-7" style={fileInputStyle} />
                     </div>
                   </div>
 
                   <Separator style={{ backgroundColor: '#eee' }} />
 
-                  {/* ─── Comment Preview Section ─── */}
+                  {/* ─── Comments Section ─── */}
                   <div>
-                    <button className="w-full flex items-center justify-between py-1"
-                      onClick={() => toggleSection('comment')}>
-                      <Label className="text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                        style={{ color: '#4b4f56', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                        <MessageCircle className="w-3.5 h-3.5" /> Comment Preview
-                        <span style={{ color: '#bcc0c4', fontWeight: 400 }}>(optional)</span>
-                      </Label>
-                      {expandedSections.comment
-                        ? <ChevronUp className="w-3.5 h-3.5" style={{ color: '#bcc0c4' }} />
-                        : <ChevronDown className="w-3.5 h-3.5" style={{ color: '#bcc0c4' }} />
-                      }
+                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('comment')}>
+                      <div className="text-xs font-semibold flex items-center gap-1"
+                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        <MessageCircle className="w-3 h-3" /> Comment Preview
+                        <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>
+                          ({postData.commentsList.length})
+                        </span>
+                      </div>
+                      {expandedSections.comment ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
                     </button>
-                    <div className="flex items-center gap-2 mb-2">
-                      <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded border text-xs font-medium transition-all"
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <button className="flex-1 flex items-center justify-center gap-1 py-1 rounded border text-xs font-medium transition-all"
                         style={{
                           borderColor: postData.showCommentPreview ? '#3b5998' : '#e5e5e5',
                           backgroundColor: postData.showCommentPreview ? '#e7f3ff' : '#fafbfc',
-                          color: postData.showCommentPreview ? '#3b5998' : '#8a8d91',
-                          fontSize: '11px',
-                        }}
-                        onClick={() => updateField('showCommentPreview', !postData.showCommentPreview)}>
+                          color: postData.showCommentPreview ? '#3b5998' : '#8a8d91', fontSize: '10px',
+                        }} onClick={() => updateField('showCommentPreview', !postData.showCommentPreview)}>
                         <MessageCircle className="w-3 h-3" />
                         {postData.showCommentPreview ? 'Comments Shown' : 'Show Comments'}
                       </button>
+                      <button className="flex items-center justify-center gap-1 py-1 px-2 rounded border text-xs font-medium transition-all"
+                        style={{ borderColor: '#e5e5e5', backgroundColor: '#fafbfc', color: '#8a8d91', fontSize: '10px' }}
+                        onClick={addComment}>
+                        <Plus className="w-3 h-3" /> Add
+                      </button>
                     </div>
 
-                    {expandedSections.comment && (
-                      <div className="space-y-3 pl-1">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-sm overflow-hidden border flex-shrink-0 cursor-pointer"
+                    {expandedSections.comment && postData.commentsList.map((c, idx) => (
+                      <div key={c.id} className="border rounded p-2 mb-2" style={{
+                        borderColor: '#e5e5e5', backgroundColor: '#fafbfc',
+                      }}>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <div className="w-7 h-7 rounded-sm overflow-hidden border flex-shrink-0 cursor-pointer"
                             style={{ borderColor: '#ccd0d5', backgroundColor: '#e9eaed' }}
-                            onClick={() => commenterAvatarInputRef.current?.click()}>
-                            <img src={postData.commenterAvatar} alt="" className="w-full h-full object-cover" />
+                            onClick={() => {
+                              const ref = commenterAvatarInputRefs.current[c.id]
+                              if (ref) ref.click()
+                            }}>
+                            <img src={c.commenterAvatar} alt="" className="w-full h-full object-cover" />
                           </div>
-                          <Input type="text" placeholder="Commenter name"
-                            value={postData.commenterName}
-                            onChange={(e) => updateField('commenterName', e.target.value)}
-                            className="text-sm h-8 flex-1" style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
-                          {postData.commenterAvatar !== '/fb-default-avatar.svg' && (
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500"
-                              onClick={removeCommenterAvatar}>
-                              <X className="w-3 h-3" />
-                            </Button>
+                          <input ref={(el) => { commenterAvatarInputRefs.current[c.id] = el }}
+                            type="file" accept="image/*" className="hidden"
+                            onChange={handleCommenterAvatarUpload(c.id)} />
+                          <Input type="text" placeholder="Commenter name" value={c.commenterName}
+                            onChange={(e) => updateComment(c.id, 'commenterName', e.target.value)}
+                            className="text-sm h-7 flex-1" style={{ ...fileInputStyle, fontSize: '11px' }} />
+                          {postData.commentsList.length > 1 && (
+                            <button className="text-red-400 hover:text-red-600 p-0.5" onClick={() => removeComment(c.id)}>
+                              <Trash2 className="w-3 h-3" />
+                            </button>
                           )}
-                          <input ref={commenterAvatarInputRef} type="file" accept="image/*" className="hidden"
-                            onChange={handleCommenterAvatarUpload} />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Comment Text</Label>
-                          <Textarea placeholder="Write a comment..."
-                            value={postData.commentText}
-                            onChange={(e) => updateField('commentText', e.target.value)}
-                            rows={2} className="text-sm resize-none"
-                            style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
+                        <Textarea placeholder="Write a comment..." value={c.commentText}
+                          onChange={(e) => updateComment(c.id, 'commentText', e.target.value)}
+                          rows={1} className="text-sm resize-none mb-1.5" style={{ ...fileInputStyle, fontSize: '11px' }} />
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '9px' }}>Timestamp</Label>
+                            <Input type="text" placeholder="2 hrs" value={c.commentTimestamp}
+                              onChange={(e) => updateComment(c.id, 'commentTimestamp', e.target.value)}
+                              className="text-sm h-6" style={{ ...fileInputStyle, fontSize: '11px' }} />
+                          </div>
+                          <div className="w-16">
+                            <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '9px' }}>Likes</Label>
+                            <Input type="number" min={0} value={c.commentLikes}
+                              onChange={(e) => updateComment(c.id, 'commentLikes', Math.max(0, parseInt(e.target.value) || 0))}
+                              className="text-sm h-6 text-center" style={{ ...fileInputStyle, fontSize: '11px' }} />
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Comment Timestamp</Label>
-                          <Input type="text" placeholder="e.g. 2 hrs"
-                            value={postData.commentTimestamp}
-                            onChange={(e) => updateField('commentTimestamp', e.target.value)}
-                            className="text-sm h-8" style={{ borderColor: '#ccd0d5', fontSize: '12px' }} />
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator style={{ backgroundColor: '#eee' }} />
+
+                  {/* ─── Advanced Options ─── */}
+                  <div>
+                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('advanced')}>
+                      <div className="text-xs font-semibold flex items-center gap-1"
+                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        <Monitor className="w-3 h-3" /> Advanced Options
+                      </div>
+                      {expandedSections.advanced ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
+                    </button>
+
+                    {expandedSections.advanced && (
+                      <div className="space-y-2.5 pt-1">
+                        {/* Show Nav Bar */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Monitor className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              Facebook Nav Bar
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={{
+                              borderColor: postData.showNavBar ? '#3b5998' : '#e5e5e5',
+                              backgroundColor: postData.showNavBar ? '#e7f3ff' : '#fafbfc',
+                              color: postData.showNavBar ? '#3b5998' : '#8a8d91', fontSize: '10px',
+                            }} onClick={() => updateField('showNavBar', !postData.showNavBar)}>
+                            {postData.showNavBar ? 'On' : 'Off'}
+                          </button>
                         </div>
+                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
+                          Adds the classic Facebook blue navigation bar at the top of the screenshot
+                        </p>
+
+                        {/* Highlight Hashtags */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Hash className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              Highlight Hashtags
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={{
+                              borderColor: postData.highlightHashtags ? '#3b5998' : '#e5e5e5',
+                              backgroundColor: postData.highlightHashtags ? '#e7f3ff' : '#fafbfc',
+                              color: postData.highlightHashtags ? '#3b5998' : '#8a8d91', fontSize: '10px',
+                            }} onClick={() => updateField('highlightHashtags', !postData.highlightHashtags)}>
+                            {postData.highlightHashtags ? 'On' : 'Off'}
+                          </button>
+                        </div>
+
+                        {/* Truncate Long Posts */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Scissors className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              Truncate Long Posts
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={{
+                              borderColor: postData.truncateLongPosts ? '#3b5998' : '#e5e5e5',
+                              backgroundColor: postData.truncateLongPosts ? '#e7f3ff' : '#fafbfc',
+                              color: postData.truncateLongPosts ? '#3b5998' : '#8a8d91', fontSize: '10px',
+                            }} onClick={() => updateField('truncateLongPosts', !postData.truncateLongPosts)}>
+                            {postData.truncateLongPosts ? 'On' : 'Off'}
+                          </button>
+                        </div>
+                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
+                          Shows &quot;See More&quot; for posts longer than 280 characters
+                        </p>
                       </div>
                     )}
                   </div>
@@ -577,23 +684,31 @@ export default function FBPostGenerator() {
 
           {/* ═══ Right Panel - Preview ═══ */}
           <div className="lg:col-span-7 xl:col-span-8">
-            <div className="sticky top-16">
+            <div className="lg:sticky lg:top-16">
               <Card className="border shadow-sm overflow-hidden" style={{ borderColor: '#dddfe2' }}>
-                <CardHeader className="pb-3 px-4 pt-4">
+                <CardHeader className="pb-2.5 px-4 pt-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-bold flex items-center gap-2"
+                    <CardTitle className="text-xs font-bold flex items-center gap-1.5"
                       style={{ color: '#1d2129', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="2" y="3" width="16" height="14" rx="1.5" fill="none" stroke="#3b5998" strokeWidth="1.5"/>
                         <circle cx="7" cy="8" r="1.5" fill="#3b5998"/>
                         <path d="M2 14l5-5 4 4 3-3 4 4" stroke="#3b5998" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                       Live Preview
                     </CardTitle>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                      style={{ backgroundColor: '#e7f3ff', color: '#3b5998', fontSize: '10px' }}>
-                      2014 Style
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {postData.showNavBar && (
+                        <span className="text-xs px-1.5 py-0.5 rounded font-medium"
+                          style={{ backgroundColor: '#3b5998', color: '#fff', fontSize: '9px' }}>
+                          <Monitor className="w-2.5 h-2.5 inline mr-0.5" />Full Screenshot
+                        </span>
+                      )}
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                        style={{ backgroundColor: '#e7f3ff', color: '#3b5998', fontSize: '9px' }}>
+                        2014 Style
+                      </span>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -602,54 +717,54 @@ export default function FBPostGenerator() {
                   </div>
 
                   {/* ─── Download Actions ─── */}
-                  <div className="p-3 sm:p-4 border-t flex flex-wrap items-center gap-2"
-                    style={{ backgroundColor: '#fafbfc', borderColor: '#e5e5e5' }}>
-                    <Button
-                      onClick={() => handleDownload('png')}
-                      disabled={isDownloading}
-                      className="flex-1 min-w-[140px] gap-2 text-sm font-semibold text-white"
-                      style={{
-                        backgroundColor: isDownloading ? '#8a9bc5' : '#3b5998',
-                        height: '38px', borderRadius: '2px',
-                      }}
-                      onMouseOver={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = '#2d4373' }}
-                      onMouseOut={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = '#3b5998' }}
-                    >
-                      {isDownloading ? (
-                        <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3"/>
-                          <path d="M12 2a10 10 0 019.95 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-                        </svg> Generating...</>
-                      ) : (
-                        <><Download className="w-4 h-4" /> Download PNG</>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => handleDownload('jpeg')}
-                      disabled={isDownloading}
-                      className="gap-2 text-sm font-semibold"
-                      style={{
-                        backgroundColor: '#ffffff', color: '#3b5998',
-                        border: '1px solid #3b5998', height: '38px', borderRadius: '2px',
-                      }}
-                      onMouseOver={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = '#e7f3ff' }}
-                      onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
-                    >
-                      <FileImage className="w-4 h-4" /> JPEG
-                    </Button>
-                    <Button
-                      onClick={handleCopyToClipboard}
-                      disabled={isDownloading}
-                      className="gap-2 text-sm font-semibold"
-                      style={{
-                        backgroundColor: '#ffffff', color: '#4b4f56',
-                        border: '1px solid #dddfe2', height: '38px', borderRadius: '2px',
-                      }}
-                      onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#f0f2f5' }}
-                      onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
-                    >
-                      <Copy className="w-4 h-4" /> Copy
-                    </Button>
+                  <div className="p-3 border-t" style={{ backgroundColor: '#fafbfc', borderColor: '#e5e5e5' }}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button onClick={() => handleDownload('png', 3)}
+                        disabled={isDownloading}
+                        className="flex-1 min-w-[120px] gap-1.5 text-xs font-semibold text-white"
+                        style={{
+                          backgroundColor: isDownloading ? '#8a9bc5' : '#3b5998',
+                          height: '36px', borderRadius: '2px',
+                        }}
+                        onMouseOver={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = '#2d4373' }}
+                        onMouseOut={(e) => { if (!isDownloading) e.currentTarget.style.backgroundColor = '#3b5998' }}>
+                        {isDownloading ? (
+                          <><svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3"/>
+                            <path d="M12 2a10 10 0 019.95 9" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                          </svg> Generating...</>
+                        ) : (
+                          <><Download className="w-3.5 h-3.5" /> PNG (3x)</>
+                        )}
+                      </Button>
+                      <Button onClick={() => handleDownload('png', 2)} disabled={isDownloading}
+                        className="gap-1 text-xs font-semibold" style={{
+                          backgroundColor: '#fff', color: '#3b5998',
+                          border: '1px solid #3b5998', height: '36px', borderRadius: '2px',
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff' }}
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}>
+                        <Download className="w-3.5 h-3.5" /> PNG 2x
+                      </Button>
+                      <Button onClick={() => handleDownload('jpeg', 3)} disabled={isDownloading}
+                        className="gap-1 text-xs font-semibold" style={{
+                          backgroundColor: '#fff', color: '#3b5998',
+                          border: '1px solid #3b5998', height: '36px', borderRadius: '2px',
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff' }}
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}>
+                        <FileImage className="w-3.5 h-3.5" /> JPEG
+                      </Button>
+                      <Button onClick={handleCopyToClipboard} disabled={isDownloading}
+                        className="gap-1 text-xs font-semibold" style={{
+                          backgroundColor: '#fff', color: '#4b4f56',
+                          border: '1px solid #dddfe2', height: '36px', borderRadius: '2px',
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#f0f2f5' }}
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}>
+                        <Copy className="w-3.5 h-3.5" /> Copy
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -659,12 +774,12 @@ export default function FBPostGenerator() {
       </main>
 
       {/* ──── Footer ──── */}
-      <footer className="mt-auto py-3 text-center border-t" style={{
+      <footer className="mt-auto py-2.5 text-center border-t" style={{
         backgroundColor: '#ffffff', borderColor: '#e5e5e5', color: '#8a8d91',
-        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: '11px',
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: '10px',
       }}>
         <p>2014 Facebook Post Generator &middot; For nostalgic purposes only</p>
-        <p className="mt-0.5" style={{ color: '#bcc0c4', fontSize: '10px' }}>
+        <p className="mt-0.5" style={{ color: '#bcc0c4', fontSize: '9px' }}>
           Facebook is a registered trademark of Meta Platforms, Inc.
         </p>
       </footer>
