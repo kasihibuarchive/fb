@@ -200,6 +200,16 @@ function CalendarIcon({ size = 16, color = '#ffffff' }: { size?: number; color?:
   )
 }
 
+function PollIcon({ size = 16, color = '#ffffff' }: { size?: number; color?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="14" width="4" height="7" rx="1" fill={color}/>
+      <rect x="10" y="10" width="4" height="11" rx="1" fill={color}/>
+      <rect x="17" y="3" width="4" height="18" rx="1" fill={color}/>
+    </svg>
+  )
+}
+
 function PlayButtonIcon({ size = 36 }: { size?: number }) {
   return (
     <svg viewBox="0 0 48 48" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
@@ -278,11 +288,17 @@ export interface FBPostData {
   groupPostName: string
   groupPostAvatar: string
   // v8.0 new fields
-  postType: 'default' | 'lifeevent'
+  postType: 'default' | 'lifeevent' | 'poll'
   lifeEventCategory: string
   lifeEventDate: string
   lifeEventDescription: string
   postFontFamily: string
+  // v9.0 new fields
+  pollQuestion: string
+  pollOptions: string[]
+  pollVotes: number[]
+  pollTotalVotes: number
+  textStyle: 'normal' | 'bold' | 'italic' | 'large'
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -343,6 +359,12 @@ export const defaultPostData: FBPostData = {
   lifeEventDate: '',
   lifeEventDescription: '',
   postFontFamily: 'default',
+  // v9.0 defaults
+  pollQuestion: '',
+  pollOptions: [],
+  pollVotes: [],
+  pollTotalVotes: 0,
+  textStyle: 'normal',
 }
 
 export const feelingOptions = [
@@ -617,6 +639,25 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       ],
     },
   },
+  {
+    name: 'Poll',
+    emoji: '📊',
+    data: {
+      ...defaultPostData,
+      userName: 'Fun Facts Daily',
+      timestamp: 'April 10, 2014 at 2:00 PM',
+      postContent: '',
+      postType: 'poll',
+      pollQuestion: "What's your favorite season?",
+      pollOptions: ['Spring', 'Summer', 'Autumn', 'Winter'],
+      pollVotes: [342, 518, 289, 156],
+      pollTotalVotes: 1305,
+      likes: 89,
+      comments: 45,
+      shares: 12,
+      topLikerName: 'Nature Lover',
+    },
+  },
 ]
 
 // ──────────── Helpers ────────────
@@ -688,7 +729,7 @@ function PostCardWrapper({ children }: { children: React.ReactNode }) {
       transform: mounted ? 'translateY(0)' : 'translateY(2px)',
       transition: 'opacity 0.4s ease, transform 0.4s ease, box-shadow 0.6s ease',
       boxShadow: mounted
-        ? '0 1px 2px rgba(0,0,0,0.1), 0 0 3px rgba(0,0,0,0.04)'
+        ? '0 1px 3px rgba(0,0,0,0.12), 0 0 4px rgba(0,0,0,0.06)'
         : '0 1px 2px rgba(0,0,0,0.06), 0 0 3px rgba(0,0,0,0.02)',
     }}>
       {children}
@@ -1263,7 +1304,8 @@ interface FBPostPreviewProps {
 export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
   function FBPostPreview({ data }, ref) {
     const {
-      profilePicture, userName, timestamp, postContent, attachedImage,
+      profilePicture, userName, timestamp, postContent,
+      attachedImages,
       sharedLink, linkTitle, linkDomain, linkDescription, linkImage,
       visibility, likes, comments, shares, topLikerName,
       showCommentPreview, commentsList, showNavBar, highlightHashtags, truncateLongPosts,
@@ -1272,13 +1314,15 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
       sharedByText, isEdited, engagementVisibility, commentSortOrder,
       groupPostName, groupPostAvatar,
       postType, lifeEventCategory, lifeEventDate, lifeEventDescription, postFontFamily,
+      pollQuestion, pollOptions, pollVotes, pollTotalVotes, textStyle,
     } = data
 
     const hasEngagement = likes > 0 || comments > 0 || shares > 0
     const hasLikes = likes > 0
     const hasComments = comments > 0
     const hasShares = shares > 0
-    const hasContent = !!(postContent || attachedImage || sharedLink)
+    const validImages = (attachedImages || []).filter(i => i && i.trim())
+    const hasContent = !!(postContent || validImages.length > 0 || sharedLink || postType === 'poll')
     const showBothSidebars = showNavBar && showSidebars
 
     const visibilityLabel = visibility === 'public' ? 'Public' : visibility === 'friends' ? 'Friends' : 'Only Me'
@@ -1321,7 +1365,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                 <CreatePostMiniBox userName={userName} profilePicture={profilePicture} />
                 <PostCard
                   profilePicture={profilePicture} userName={userName} timestamp={timestamp}
-                  postContent={postContent} attachedImage={attachedImage}
+                  postContent={postContent} attachedImages={attachedImages}
                   sharedLink={sharedLink} linkTitle={linkTitle} linkDomain={linkDomain}
                   linkDescription={linkDescription} linkImage={linkImage}
                   visibility={visibility} visibilityLabel={visibilityLabel} VisibilityIcon={VisibilityIcon}
@@ -1341,6 +1385,9 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                   postType={postType} lifeEventCategory={lifeEventCategory}
                   lifeEventDate={lifeEventDate} lifeEventDescription={lifeEventDescription}
                   postFontFamily={postFontFamily}
+                  pollQuestion={pollQuestion} pollOptions={pollOptions}
+                  pollVotes={pollVotes} pollTotalVotes={pollTotalVotes}
+                  textStyle={textStyle}
                 />
                 {showMoreStories && <MoreStoriesSection />}
                 <FacebookFooter />
@@ -1355,7 +1402,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
             <div style={{ padding: showNavBar ? '0' : '0' }}>
               <PostCard
                 profilePicture={profilePicture} userName={userName} timestamp={timestamp}
-                postContent={postContent} attachedImage={attachedImage}
+                postContent={postContent} attachedImages={attachedImages}
                 sharedLink={sharedLink} linkTitle={linkTitle} linkDomain={linkDomain}
                 linkDescription={linkDescription} linkImage={linkImage}
                 visibility={visibility} visibilityLabel={visibilityLabel} VisibilityIcon={VisibilityIcon}
@@ -1375,6 +1422,9 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                 postType={postType} lifeEventCategory={lifeEventCategory}
                 lifeEventDate={lifeEventDate} lifeEventDescription={lifeEventDescription}
                 postFontFamily={postFontFamily}
+                pollQuestion={pollQuestion} pollOptions={pollOptions}
+                pollVotes={pollVotes} pollTotalVotes={pollTotalVotes}
+                textStyle={textStyle}
               />
             </div>
             {showNavBar && showMoreStories && <MoreStoriesSection />}
@@ -1408,23 +1458,19 @@ function MoreStoriesSection() {
           marginBottom: '8px',
           display: 'flex',
           gap: '8px',
-          alignItems: 'flex-start',
         }}>
           <div style={{
-            width: '32px', height: '32px', minWidth: '32px',
-            borderRadius: '2px', overflow: 'hidden',
-            border: '1px solid #e5e5e5', backgroundColor: '#e9eaed',
+            width: '32px', height: '32px', borderRadius: '2px',
+            overflow: 'hidden', border: '1px solid #e5e5e5', backgroundColor: '#e9eaed', flexShrink: 0,
           }}>
-            <img src={story.avatar} alt="" style={{
-              width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-            }} />
+            <img src={story.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: '12px', fontWeight: 700, color: '#3b5998', lineHeight: '15px' }}>
               {story.name}
             </div>
             <div style={{
-              fontSize: '11px', color: '#6d7380', lineHeight: '15px',
+              fontSize: '11px', color: '#6d7380', lineHeight: '14px',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
               {story.text}
@@ -1444,13 +1490,217 @@ function MoreStoriesSection() {
 function FacebookFooter() {
   return (
     <div style={{
-      padding: '10px 12px',
-      fontSize: '11px',
-      color: '#9197a3',
+      padding: '10px 0 6px 0',
       borderTop: '1px solid #e5e5e5',
       marginTop: '10px',
     }}>
-      Facebook © 2014 · English (US) · Privacy · Terms · Cookies · Advertising · Help
+      <div style={{
+        fontSize: '11px', color: '#9197a3', textAlign: 'center',
+        lineHeight: '16px',
+      }}>
+        Facebook © 2014 · English (US) · Privacy · Terms · Cookies · Advertising · Help
+      </div>
+    </div>
+  )
+}
+
+// ──────────── Photo Grid Component ────────────
+
+function PhotoGrid({ images, borderRadius }: { images: string[]; borderRadius: number }) {
+  const validImages = images.filter(i => i && i.trim())
+  const count = validImages.length
+  const br = Math.min(borderRadius || 3, 3)
+
+  const imageStyle = (objectFit: React.CSSProperties['objectFit'] = 'cover'): React.CSSProperties => ({
+    width: '100%', height: '100%', display: 'block', objectFit,
+    backgroundColor: '#e5e5e5',
+  })
+
+  const containerStyle: React.CSSProperties = {
+    margin: '0 10px 6px 10px',
+    backgroundColor: '#e5e5e5',
+    borderRadius: `${br}px`,
+    overflow: 'hidden',
+    border: '1px solid #dddfe2',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  }
+
+  if (count === 1) {
+    return (
+      <div style={containerStyle}>
+        <img src={validImages[0]} alt="Post attachment" style={{
+          ...imageStyle('contain'),
+          maxHeight: '500px',
+        }} />
+      </div>
+    )
+  }
+
+  // Grid gap/border between cells
+  const gridGap = '1px solid #dddfe2'
+  const cellRadius = '2px'
+
+  if (count === 2) {
+    return (
+      <div style={{ ...containerStyle, display: 'flex' }}>
+        <div style={{ flex: 1, borderRight: gridGap }}>
+          <img src={validImages[0]} alt="" style={{ ...imageStyle(), height: '200px' }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <img src={validImages[1]} alt="" style={{ ...imageStyle(), height: '200px' }} />
+        </div>
+      </div>
+    )
+  }
+
+  if (count === 3) {
+    return (
+      <div style={{ ...containerStyle, display: 'flex' }}>
+        <div style={{ flex: 2, borderRight: gridGap }}>
+          <img src={validImages[0]} alt="" style={{ ...imageStyle(), height: '200px', borderRadius: `${cellRadius} 0 0 ${cellRadius}` }} />
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, borderBottom: gridGap }}>
+            <img src={validImages[1]} alt="" style={{ ...imageStyle(), height: '100px', borderRadius: `0 ${cellRadius} 0 0` }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <img src={validImages[2]} alt="" style={{ ...imageStyle(), height: '100px', borderRadius: `0 0 ${cellRadius} 0` }} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // 4+ photos: 2x2 grid
+  const displayImages = validImages.slice(0, 4)
+  return (
+    <div style={{ ...containerStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', backgroundColor: '#dddfe2' }}>
+      {displayImages.map((img, i) => (
+        <div key={i} style={{
+          borderRadius: i === 0 ? `${cellRadius} 0 0 0` : i === 1 ? `0 ${cellRadius} 0 0` : i === 2 ? '0 0 0 0' : `0 0 ${cellRadius} 0`,
+          overflow: 'hidden',
+        }}>
+          <img src={img} alt="" style={{ ...imageStyle(), height: '150px' }} />
+        </div>
+      ))}
+      {count > 4 && (
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '16px', fontWeight: 700,
+          width: '40px', height: '40px', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 2,
+        }}>
+          +{count - 4}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ──────────── Poll Card Component ────────────
+
+function PollCard({ question, options, votes, totalVotes }: {
+  question: string; options: string[]; votes: number[]; totalVotes: number
+}) {
+  const maxVotes = Math.max(...votes, 1)
+  const topOptionIndex = votes.indexOf(Math.max(...votes))
+
+  return (
+    <div style={{
+      margin: '0 10px 6px 10px',
+      border: '1px solid #dddfe2',
+      borderRadius: '3px',
+      overflow: 'hidden',
+      backgroundColor: '#f7f8fa',
+    }}>
+      {/* Blue header with gradient */}
+      <div style={{
+        background: 'linear-gradient(180deg, #4267B2 0%, #3b5998 100%)',
+        padding: '8px 10px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+      }}>
+        <PollIcon size={14} color="#ffffff" />
+        <span style={{ fontSize: '10px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Poll
+        </span>
+      </div>
+      {/* Question — bold, 15px */}
+      <div style={{
+        padding: '8px 10px 4px 10px',
+        fontSize: '15px', fontWeight: 700, color: '#1d2129',
+        lineHeight: '19px',
+      }}>
+        {question}
+      </div>
+      {/* Options */}
+      <div style={{ padding: '4px 10px 8px 10px' }}>
+        {options.map((option, i) => {
+          const voteCount = votes[i] || 0
+          const pct = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0
+          const isTop = i === topOptionIndex
+          return (
+            <div key={i} style={{
+              padding: '6px 10px',
+              marginBottom: i < options.length - 1 ? '0' : '0',
+              borderRadius: '3px',
+              backgroundColor: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              position: 'relative',
+              overflow: 'hidden',
+              borderBottom: i < options.length - 1 ? '1px solid #e5e5e5' : 'none',
+            }}>
+              {/* Radio button */}
+              <div style={{
+                width: '14px', height: '14px', minWidth: '14px',
+                borderRadius: '50%',
+                border: isTop ? 'none' : '1.5px solid #bcc0c4',
+                backgroundColor: isTop ? '#4267B2' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative', zIndex: 1,
+              }}>
+                {isTop && (
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ffffff' }} />
+                )}
+              </div>
+              {/* Gradient progress bar */}
+              <div style={{
+                position: 'absolute', left: 0, top: 0, bottom: 0,
+                width: `${pct}%`,
+                background: 'linear-gradient(90deg, #3b5998 0%, #4267B2 100%)',
+                opacity: 0.12,
+                borderRadius: '3px',
+              }} />
+              <div style={{
+                flex: 1, minWidth: 0, position: 'relative', zIndex: 1,
+                fontSize: '13px', color: '#1d2129', fontWeight: isTop ? 600 : 500,
+              }}>
+                {option}
+              </div>
+              <div style={{
+                position: 'relative', zIndex: 1,
+                fontSize: '12px', color: '#65676b', fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}>
+                {voteCount} votes
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {/* Footer */}
+      <div style={{
+        padding: '4px 10px 8px 10px',
+        fontSize: '11px', color: '#65676b',
+        borderTop: '1px solid #e5e5e5',
+        backgroundColor: '#f7f8fa',
+      }}>
+        {totalVotes.toLocaleString()} votes · 5 days left
+      </div>
     </div>
   )
 }
@@ -1458,7 +1708,7 @@ function FacebookFooter() {
 // ──────────── Post Card Component ────────────
 
 function PostCard({
-  profilePicture, userName, timestamp, postContent, attachedImage,
+  profilePicture, userName, timestamp, postContent, attachedImages,
   sharedLink, linkTitle, linkDomain, linkDescription, linkImage,
   visibility, visibilityLabel, VisibilityIcon,
   likes, comments, shares, topLikerName,
@@ -1470,12 +1720,13 @@ function PostCard({
   sharedByText, isEdited, engagementVisibility, commentSortOrder,
   groupPostName, groupPostAvatar,
   postType, lifeEventCategory, lifeEventDate, lifeEventDescription, postFontFamily,
+  pollQuestion, pollOptions, pollVotes, pollTotalVotes, textStyle,
 }: {
   profilePicture: string
   userName: string
   timestamp: string
   postContent: string
-  attachedImage: string
+  attachedImages: string[]
   sharedLink: boolean
   linkTitle: string
   linkDomain: string
@@ -1514,15 +1765,30 @@ function PostCard({
   commentSortOrder: CommentSortOrder
   groupPostName: string
   groupPostAvatar: string
-  postType: 'default' | 'lifeevent'
+  postType: 'default' | 'lifeevent' | 'poll'
   lifeEventCategory: string
   lifeEventDate: string
   lifeEventDescription: string
   postFontFamily: string
+  pollQuestion: string
+  pollOptions: string[]
+  pollVotes: number[]
+  pollTotalVotes: number
+  textStyle: 'normal' | 'bold' | 'italic' | 'large'
 }) {
   const bgColor = getPostBgColor(postBackground)
   const br = borderRadius || 3
   const contentFontFamily = getFontFamily(postFontFamily)
+  const validImages = (attachedImages || []).filter(i => i && i.trim())
+  const hasImages = validImages.length > 0
+  const isPoll = postType === 'poll'
+
+  // Compute text styles
+  const textStyles: React.CSSProperties = {
+    ...(textStyle === 'bold' ? { fontWeight: 700 } : {}),
+    ...(textStyle === 'italic' ? { fontStyle: 'italic' } : {}),
+    ...(textStyle === 'large' ? { fontSize: '18px' } : {}),
+  }
 
   return (
     <PostCardWrapper>
@@ -1572,15 +1838,16 @@ function PostCard({
         {/* ─── Life Event Banner ─── */}
         {postType === 'lifeevent' && (
           <div style={{
-            backgroundColor: '#4267B2',
+            background: 'linear-gradient(180deg, #4267B2 0%, #3b5998 100%)',
             padding: '12px 12px 14px 12px',
             display: 'flex',
             flexDirection: 'column',
             gap: '2px',
+            borderBottom: '1px solid #3b5998',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CalendarIcon size={16} color="#ffffff" />
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>Life Event</span>
+              <CalendarIcon size={18} color="#ffffff" />
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>Life Event</span>
             </div>
             {lifeEventCategory && (
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', paddingLeft: '22px' }}>
@@ -1693,11 +1960,13 @@ function PostCard({
         {/* ─── Post Content ─── */}
         {postContent && (
           <div style={{
-            padding: attachedImage || sharedLink ? '6px 12px 8px 12px' : '6px 12px 8px 60px',
-            fontSize: '14px', lineHeight: '1.42', color: '#1d2129',
+            padding: (hasImages || sharedLink) ? '6px 12px 8px 12px' : '6px 12px 8px 60px',
+            fontSize: textStyle === 'large' ? '18px' : '14px',
+            lineHeight: '1.42', color: '#1d2129',
             wordBreak: 'break-word', whiteSpace: 'pre-wrap',
             fontFamily: contentFontFamily,
             letterSpacing: '0.01em',
+            ...textStyles,
           }}>
             {renderTextWithHashtags(displayContent, highlightHashtags)}
             {shouldTruncate && (
@@ -1723,19 +1992,19 @@ function PostCard({
           </div>
         )}
 
-        {/* ─── Attached Image ─── */}
-        {attachedImage && (
-          <div style={{ margin: '0 10px 6px 10px' }}>
-            <div style={{
-              backgroundColor: '#e5e5e5', borderRadius: `${Math.min(br, 3)}px`,
-              overflow: 'hidden', border: '1px solid #dddfe2',
-            }}>
-              <img src={attachedImage} alt="Post attachment" style={{
-                width: '100%', display: 'block', maxHeight: '500px',
-                objectFit: 'contain', backgroundColor: '#e5e5e5',
-              }} />
-            </div>
-          </div>
+        {/* ─── Photo Grid ─── */}
+        {hasImages && (
+          <PhotoGrid images={validImages} borderRadius={br} />
+        )}
+
+        {/* ─── Poll Card ─── */}
+        {isPoll && pollQuestion && pollOptions.length > 0 && (
+          <PollCard
+            question={pollQuestion}
+            options={pollOptions}
+            votes={pollVotes}
+            totalVotes={pollTotalVotes}
+          />
         )}
 
         {/* ─── Shared Link Preview ─── */}
@@ -1784,8 +2053,12 @@ function PostCard({
                 <div style={{
                   fontSize: '10px', color: '#9197a3', lineHeight: '15px',
                   marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.02em',
+                  display: 'flex', alignItems: 'center', gap: '3px',
                 }}>
-                  {linkDomain || 'EXAMPLE.COM'}
+                  <span>{linkDomain || 'EXAMPLE.COM'}</span>
+                  <svg viewBox="0 0 10 10" width="9" height="9" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
+                    <path d="M1 9L9 1M5 1h4v4" fill="none" stroke="#9197a3" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
                 <div style={{
                   fontSize: '12px', color: '#6d7380', lineHeight: '16px',
@@ -1948,6 +2221,7 @@ function PostCard({
             background: 'linear-gradient(180deg, #f0f3f8 0%, #e8ecf1 100%)',
             borderRight: '1px solid #e5e5e5',
             letterSpacing: '0.02em',
+            cursor: 'pointer',
           }}>
             <div style={{
               borderRadius: '2px',
@@ -1963,8 +2237,9 @@ function PostCard({
             gap: '4px', padding: '6px 0', fontSize: '12px', fontWeight: 700,
             color: '#7f7f7f', borderRight: '1px solid #e5e5e5',
             letterSpacing: '0.02em',
+            cursor: 'pointer',
           }}>
-            <CommentBubbleIcon size={13} color="#7f7f7f" />
+            <CommentBubbleIcon size={12} color="#7f7f7f" />
             <span>Comment</span>
           </div>
           <div style={{
@@ -1972,8 +2247,9 @@ function PostCard({
             gap: '4px', padding: '6px 0', fontSize: '12px', fontWeight: 700,
             color: '#7f7f7f',
             letterSpacing: '0.02em',
+            cursor: 'pointer',
           }}>
-            <ShareArrowIcon size={13} color="#7f7f7f" />
+            <ShareArrowIcon size={12} color="#7f7f7f" />
             <span>Share</span>
           </div>
         </div>
@@ -2010,10 +2286,10 @@ function PostCard({
               height: '1px', backgroundColor: '#e5e5e5', marginBottom: '6px',
             }} />
 
-            {commentsList.map((comment) => (
+            {commentsList.map((comment, commentIdx) => (
               <div key={comment.id} style={{
-                backgroundColor: '#f7f7f7',
-                borderRadius: '3px',
+                backgroundColor: '#f7f8fa',
+                borderRadius: '12px',
                 padding: '6px 8px',
                 marginBottom: '6px',
               }}>
@@ -2034,11 +2310,18 @@ function PostCard({
                       padding: '6px 10px',
                     }}>
                       <span style={{
-                        fontSize: '12px', fontWeight: 700, color: '#3b5998',
+                        fontSize: '12.5px', fontWeight: 700, color: '#3b5998',
                         lineHeight: '16px',
                       }}>
                         {comment.commenterName}
                       </span>
+                      {/* Verified badge on first commenter */}
+                      {commentIdx === 0 && (
+                        <svg viewBox="0 0 12 12" width="12" height="12" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: '3px', verticalAlign: 'middle', marginTop: '-1px' }}>
+                          <circle cx="6" cy="6" r="6" fill="#3b5998"/>
+                          <path d="M3.2 6l1.8 1.8 3.8-3.8" fill="none" stroke="#ffffff" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
                       <span style={{
                         fontSize: '12px', color: '#1d2129',
                         lineHeight: '16px', marginLeft: '4px',
