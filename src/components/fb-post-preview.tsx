@@ -40,6 +40,69 @@ function MiniHahaFace({ size = 10 }: { size?: number }) {
   )
 }
 
+function MiniWowFace({ size = 10 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="8" r="7" fill="#f7b928"/>
+      <circle cx="5.5" cy="6" r="1.2" fill="#fff"/>
+      <circle cx="10.5" cy="6" r="1.2" fill="#fff"/>
+      <ellipse cx="8" cy="11" rx="2" ry="1.8" fill="#fff"/>
+      <path d="M4.5 4.5Q5.5 3 6.5 4.5" fill="none" stroke="#fff" strokeWidth="0.8" strokeLinecap="round"/>
+      <path d="M9.5 4.5Q10.5 3 11.5 4.5" fill="none" stroke="#fff" strokeWidth="0.8" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function MiniSadFace({ size = 10 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="8" r="7" fill="#f7b928"/>
+      <circle cx="5.5" cy="6" r="1.2" fill="#fff"/>
+      <circle cx="10.5" cy="6" r="1.2" fill="#fff"/>
+      <path d="M5 11.5c0 0 1.5-1.5 3-1.5s3 1.5 3 1.5" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round"/>
+      <path d="M5.5 3.5Q6.5 4.5 7.5 3.5" fill="none" stroke="#fff" strokeWidth="0.7" strokeLinecap="round"/>
+      <path d="M8.5 3.5Q9.5 4.5 10.5 3.5" fill="none" stroke="#fff" strokeWidth="0.7" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function MiniAngryFace({ size = 10 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
+      <circle cx="8" cy="8" r="7" fill="#e74c3c"/>
+      <circle cx="5.5" cy="7" r="1.2" fill="#fff"/>
+      <circle cx="10.5" cy="7" r="1.2" fill="#fff"/>
+      <path d="M5 10c0 0 1.5 2 3 2s3-2 3-2" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round"/>
+      <path d="M4 5L7 6.5" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round"/>
+      <path d="M12 5L9 6.5" fill="none" stroke="#fff" strokeWidth="1" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function getReactionEmoji(type: ReactionType, size?: number): React.ReactNode {
+  switch (type) {
+    case 'like': return <FilledThumbsUp size={size || 11} />
+    case 'love': return <MiniFilledHeart size={size || 10} />
+    case 'haha': return <MiniHahaFace size={size || 10} />
+    case 'wow': return <MiniWowFace size={size || 10} />
+    case 'sad': return <MiniSadFace size={size || 10} />
+    case 'angry': return <MiniAngryFace size={size || 10} />
+    default: return <FilledThumbsUp size={size || 11} />
+  }
+}
+
+function getReactionBgColor(type: ReactionType): string {
+  switch (type) {
+    case 'like': return '#3b5998'
+    case 'love': return '#e74c3c'
+    case 'haha': return '#f7b928'
+    case 'wow': return '#f7b928'
+    case 'sad': return '#f7b928'
+    case 'angry': return '#e74c3c'
+    default: return '#3b5998'
+  }
+}
+
 function GlobeIcon({ size = 12, color = '#9197a3' }: { size?: number; color?: string }) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} xmlns="http://www.w3.org/2000/svg">
@@ -229,6 +292,8 @@ export type CommentSortOrder = 'top' | 'newest' | 'all'
 
 export type EngagementVisibility = 'public' | 'friends' | 'custom'
 
+export type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry'
+
 export interface ReplyData {
   id: string
   name: string
@@ -303,6 +368,11 @@ export interface FBPostData {
   isPinned: boolean
   sponsoredBy: string
   customBadgeText: string
+  // v11.0 new fields
+  reactionType: ReactionType
+  postTextColor: string
+  imageGridLayout: 'auto' | 'grid2x2' | 'grid2x3'
+  showVerifiedBadge: boolean
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -373,6 +443,11 @@ export const defaultPostData: FBPostData = {
   isPinned: false,
   sponsoredBy: '',
   customBadgeText: '',
+  // v11.0 defaults
+  reactionType: 'like',
+  postTextColor: '',
+  imageGridLayout: 'auto',
+  showVerifiedBadge: false,
 }
 
 export const feelingOptions = [
@@ -420,6 +495,15 @@ export const fontFamilyOptions = [
   { value: 'courier', label: 'Courier New', family: "'Courier New', Courier, monospace" },
   { value: 'trebuchet', label: 'Trebuchet MS', family: "'Trebuchet MS', Helvetica, sans-serif" },
   { value: 'verdana', label: 'Verdana', family: 'Verdana, Geneva, sans-serif' },
+]
+
+export const reactionTypeOptions: { value: ReactionType; label: string; icon: string; color: string }[] = [
+  { value: 'like', label: 'Like', icon: '👍', color: '#3b5998' },
+  { value: 'love', label: 'Love', icon: '❤️', color: '#e74c3c' },
+  { value: 'haha', label: 'Haha', icon: '😂', color: '#f7b928' },
+  { value: 'wow', label: 'Wow', icon: '😮', color: '#f7b928' },
+  { value: 'sad', label: 'Sad', icon: '😢', color: '#f7b928' },
+  { value: 'angry', label: 'Angry', icon: '😡', color: '#e74c3c' },
 ]
 
 const moreStoriesData = [
@@ -714,6 +798,81 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       highlightHashtags: true,
       showNavBar: true,
       showSidebars: true,
+    },
+  },
+  {
+    name: 'Travel Check-in',
+    emoji: '✈️',
+    data: {
+      ...defaultPostData,
+      userName: 'Emma Watson',
+      timestamp: 'August 3, 2014 at 6:45 PM',
+      postContent: 'Paris in the summer is pure magic ✨🇫🇷\n\nFrom the Eiffel Tower at sunset to croissants at midnight, every moment has been unforgettable. Already planning my next visit!\n\n#Paris #Travel #Wanderlust #Summer2014 #Blessed',
+      likes: 1847,
+      comments: 234,
+      shares: 67,
+      topLikerName: 'Lupita Nyong\'o',
+      showCommentPreview: true,
+      highlightHashtags: true,
+      location: 'Eiffel Tower, Paris, France',
+      feeling: 'feeling blessed',
+      showVerifiedBadge: true,
+      textStyle: 'normal',
+      commentsList: [
+        { id: '1', commenterName: 'Sophie Turner', commenterAvatar: defaultAvatar, commentText: 'I\'m SO jealous right now 😭 Paris is amazing!', commentTimestamp: '3 hrs', commentLikes: 34, replies: [] },
+        { id: '2', commenterName: 'Tom Hiddleston', commenterAvatar: defaultAvatar, commentText: 'The Louvre is a must-visit if you haven\'t been yet!', commentTimestamp: '2 hrs', commentLikes: 18, replies: [
+          { id: 'r1', name: 'Emma Watson', avatar: defaultAvatar, text: 'Going tomorrow! Any specific recommendations? 🎨', timestamp: '1 hr' },
+        ] },
+      ],
+    },
+  },
+  {
+    name: 'Photo Album',
+    emoji: '📸',
+    data: {
+      ...defaultPostData,
+      userName: 'National Geographic',
+      timestamp: 'October 20, 2014 at 10:00 AM',
+      postContent: 'Our top 10 photos from this month\'s wildlife expedition in the Serengeti. Nature never ceases to amaze us. 🌍🦁\n\n#NatGeo #Wildlife #Serengeti #NaturePhotography',
+      likes: 8234,
+      comments: 567,
+      shares: 1203,
+      topLikerName: 'BBC Earth',
+      showCommentPreview: true,
+      highlightHashtags: true,
+      showVerifiedBadge: true,
+      reactionType: 'love',
+      imageGridLayout: 'grid2x3',
+      commentsList: [
+        { id: '1', commenterName: 'David Attenborough', commenterAvatar: defaultAvatar, commentText: 'Absolutely breathtaking work. These moments remind us why conservation matters.', commentTimestamp: '5 hrs', commentLikes: 892, replies: [] },
+        { id: '2', commenterName: 'Nature Lover', commenterAvatar: defaultAvatar, commentText: 'Photo #7 is incredible! How close were you to the lions?!', commentTimestamp: '3 hrs', commentLikes: 56, replies: [] },
+      ],
+    },
+  },
+  {
+    name: 'Romantic Post',
+    emoji: '💕',
+    data: {
+      ...defaultPostData,
+      userName: 'Michael Chang',
+      timestamp: 'February 14, 2014 at 7:30 PM',
+      postContent: 'Happy Valentine\'s Day to the love of my life ❤️\n\n6 years together and you still give me butterflies. You\'re my best friend, my rock, and the reason I believe in forever. Here\'s to us, my love.\n\n#wcw #ValentinesDay #Love #MyForever #Blessed',
+      likes: 423,
+      comments: 67,
+      shares: 8,
+      topLikerName: 'Mom',
+      showCommentPreview: true,
+      highlightHashtags: true,
+      feeling: 'feeling loved',
+      textStyle: 'normal',
+      reactionType: 'love',
+      postTextColor: '#c62828',
+      commentsList: [
+        { id: '1', commenterName: 'Sarah Kim', commenterAvatar: defaultAvatar, commentText: 'Aww this is so sweet!! Happy Valentine\'s Day you two! 💕🎉', commentTimestamp: '1 hr', commentLikes: 12, replies: [] },
+        { id: '2', commenterName: 'Jason Park', commenterAvatar: defaultAvatar, commentText: 'Couple goals right here 🔥💕', commentTimestamp: '45 min', commentLikes: 8, replies: [
+          { id: 'r1', name: 'Michael Chang', avatar: defaultAvatar, text: 'Thanks bro! You\'re next! 😄', timestamp: '30 min' },
+        ] },
+      ],
     },
   },
 ]
@@ -1377,6 +1536,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
       postType, lifeEventCategory, lifeEventDate, lifeEventDescription, postFontFamily,
       pollQuestion, pollOptions, pollVotes, pollTotalVotes, textStyle,
       isPinned, sponsoredBy, customBadgeText,
+      reactionType, postTextColor, imageGridLayout, showVerifiedBadge,
     } = data
 
     const hasEngagement = likes > 0 || comments > 0 || shares > 0
@@ -1451,6 +1611,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                   pollVotes={pollVotes} pollTotalVotes={pollTotalVotes}
                   textStyle={textStyle}
                   isPinned={isPinned} sponsoredBy={sponsoredBy} customBadgeText={customBadgeText}
+                  reactionType={reactionType} postTextColor={postTextColor} imageGridLayout={imageGridLayout} showVerifiedBadge={showVerifiedBadge}
                 />
                 {showMoreStories && <MoreStoriesSection />}
                 <FacebookFooter />
@@ -1489,6 +1650,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                 pollVotes={pollVotes} pollTotalVotes={pollTotalVotes}
                 textStyle={textStyle}
                 isPinned={isPinned} sponsoredBy={sponsoredBy} customBadgeText={customBadgeText}
+                reactionType={reactionType} postTextColor={postTextColor} imageGridLayout={imageGridLayout} showVerifiedBadge={showVerifiedBadge}
               />
             </div>
             {showNavBar && showMoreStories && <MoreStoriesSection />}
@@ -1570,7 +1732,7 @@ function FacebookFooter() {
 
 // ──────────── Photo Grid Component ────────────
 
-function PhotoGrid({ images, borderRadius }: { images: string[]; borderRadius: number }) {
+function PhotoGrid({ images, borderRadius, imageGridLayout = 'auto' }: { images: string[]; borderRadius: number; imageGridLayout?: 'auto' | 'grid2x2' | 'grid2x3' }) {
   const validImages = images.filter(i => i && i.trim())
   const count = validImages.length
   const br = Math.min(borderRadius || 3, 3)
@@ -1635,29 +1797,95 @@ function PhotoGrid({ images, borderRadius }: { images: string[]; borderRadius: n
     )
   }
 
-  // 4+ photos: 2x2 grid
+  // ─── grid2x3 layout: 5+ images, 3-col grid with first image spanning 2 rows ───
+  if (imageGridLayout === 'grid2x3' && count >= 5) {
+    const displayImages = validImages.slice(0, 6)
+    const overflow = count - 6
+    return (
+      <div style={{ ...containerStyle, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '1px', backgroundColor: '#dddfe2' }}>
+        {displayImages.map((img, i) => {
+          const isFirst = i === 0
+          return (
+            <div key={i} style={{
+              gridRow: isFirst ? '1 / 3' : undefined,
+              borderRadius: i === 0 ? `${cellRadius} 0 0 ${cellRadius}` : i === 2 ? `0 ${cellRadius} 0 0` : i === 5 ? `0 0 ${cellRadius} 0` : '0',
+              overflow: 'hidden',
+              position: i === 5 && overflow > 0 ? 'relative' : undefined,
+            }}>
+              <img src={img} alt="" style={{ ...imageStyle(), height: isFirst ? '100%' : '120px' }} />
+              {i === 5 && overflow > 0 && (
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                  backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '16px', fontWeight: 700,
+                  width: '40px', height: '40px', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 2,
+                }}>
+                  +{overflow}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // ─── grid2x2 layout: 4+ images, strict 2x2 grid ───
+  if (imageGridLayout === 'grid2x2' && count >= 4) {
+    const displayImages = validImages.slice(0, 4)
+    const overflow = count - 4
+    return (
+      <div style={{ ...containerStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: '1px', backgroundColor: '#dddfe2' }}>
+        {displayImages.map((img, i) => (
+          <div key={i} style={{
+            borderRadius: i === 0 ? `${cellRadius} 0 0 0` : i === 1 ? `0 ${cellRadius} 0 0` : i === 2 ? '0 0 0 0' : `0 0 ${cellRadius} 0`,
+            overflow: 'hidden',
+            position: i === 3 && overflow > 0 ? 'relative' : undefined,
+          }}>
+            <img src={img} alt="" style={{ ...imageStyle(), height: '150px' }} />
+            {i === 3 && overflow > 0 && (
+              <div style={{
+                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '16px', fontWeight: 700,
+                width: '40px', height: '40px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                zIndex: 2,
+              }}>
+                +{overflow}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  // 4+ photos: default 2x2 grid (auto layout)
   const displayImages = validImages.slice(0, 4)
+  const overflow = count - 4
   return (
     <div style={{ ...containerStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', backgroundColor: '#dddfe2' }}>
       {displayImages.map((img, i) => (
         <div key={i} style={{
           borderRadius: i === 0 ? `${cellRadius} 0 0 0` : i === 1 ? `0 ${cellRadius} 0 0` : i === 2 ? '0 0 0 0' : `0 0 ${cellRadius} 0`,
           overflow: 'hidden',
+          position: i === 3 && overflow > 0 ? 'relative' : undefined,
         }}>
           <img src={img} alt="" style={{ ...imageStyle(), height: '150px' }} />
+          {i === 3 && overflow > 0 && (
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '16px', fontWeight: 700,
+              width: '40px', height: '40px', borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 2,
+            }}>
+              +{overflow}
+            </div>
+          )}
         </div>
       ))}
-      {count > 4 && (
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '16px', fontWeight: 700,
-          width: '40px', height: '40px', borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 2,
-        }}>
-          +{count - 4}
-        </div>
-      )}
     </div>
   )
 }
@@ -1796,6 +2024,7 @@ function PostCard({
   postType, lifeEventCategory, lifeEventDate, lifeEventDescription, postFontFamily,
   pollQuestion, pollOptions, pollVotes, pollTotalVotes, textStyle,
   isPinned, sponsoredBy, customBadgeText,
+  reactionType, postTextColor, imageGridLayout, showVerifiedBadge,
 }: {
   profilePicture: string
   userName: string
@@ -1853,6 +2082,10 @@ function PostCard({
   isPinned: boolean
   sponsoredBy: string
   customBadgeText: string
+  reactionType: ReactionType
+  postTextColor: string
+  imageGridLayout: 'auto' | 'grid2x2' | 'grid2x3'
+  showVerifiedBadge: boolean
 }) {
   const bgColor = getPostBgColor(postBackground)
   const br = borderRadius || 3
@@ -2032,6 +2265,12 @@ function PostCard({
               lineHeight: '17px', cursor: 'pointer', wordBreak: 'break-word',
             }}>
               {userName || 'Your Name'}
+              {showVerifiedBadge && (
+                <svg viewBox="0 0 24 24" width="16" height="16" style={{ marginLeft: '4px', verticalAlign: 'middle' }} xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="12" fill="#3b5998"/>
+                  <path d="M9.5 16.5l-4-4 1.5-1.5 2.5 2.5 6-6 1.5 1.5-7.5 7.5z" fill="#ffffff" stroke="#ffffff" strokeWidth="0.5"/>
+                </svg>
+              )}
             </div>
             <div style={{
               fontSize: '11px', color: '#9197a3', lineHeight: '14px',
@@ -2087,7 +2326,7 @@ function PostCard({
           <div style={{
             padding: (hasImages || sharedLink) ? '6px 12px 8px 12px' : '6px 12px 8px 60px',
             fontSize: textStyle === 'large' ? '18px' : '14px',
-            lineHeight: '1.42', color: '#1d2129',
+            lineHeight: '1.42', color: postTextColor || '#1d2129',
             wordBreak: 'break-word', whiteSpace: 'pre-wrap',
             fontFamily: contentFontFamily,
             letterSpacing: '0.01em',
@@ -2119,7 +2358,7 @@ function PostCard({
 
         {/* ─── Photo Grid ─── */}
         {hasImages && (
-          <PhotoGrid images={validImages} borderRadius={br} />
+          <PhotoGrid images={validImages} borderRadius={br} imageGridLayout={imageGridLayout} />
         )}
 
         {/* ─── Poll Card ─── */}
@@ -2259,33 +2498,49 @@ function PostCard({
             gap: '4px',
             background: 'linear-gradient(180deg, #f7f8fa 0%, #f0f2f5 100%)',
           }}>
-            {/* Reaction mini circles — 20x20 instead of 18x18 */}
+            {/* Reaction mini circles */}
             {hasLikes && (
               <div style={{ display: 'flex', alignItems: 'center', marginRight: '2px' }}>
-                <div style={{
-                  width: '20px', height: '20px', borderRadius: '50%',
-                  backgroundColor: '#3b5998', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1.5px solid #ffffff', zIndex: 3,
-                  marginLeft: '0',
-                }}>
-                  <FilledThumbsUp size={11} />
-                </div>
-                <div style={{
-                  width: '20px', height: '20px', borderRadius: '50%',
-                  backgroundColor: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1.5px solid #ffffff', zIndex: 2,
-                  marginLeft: '-5px',
-                }}>
-                  <MiniFilledHeart size={10} />
-                </div>
-                <div style={{
-                  width: '20px', height: '20px', borderRadius: '50%',
-                  backgroundColor: '#f7b928', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1.5px solid #ffffff', zIndex: 1,
-                  marginLeft: '-5px',
-                }}>
-                  <MiniHahaFace size={10} />
-                </div>
+                {reactionType === 'like' ? (
+                  <>
+                    <div style={{
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      backgroundColor: '#3b5998', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1.5px solid #ffffff', zIndex: 3,
+                      marginLeft: '0',
+                    }}>
+                      <FilledThumbsUp size={11} />
+                    </div>
+                    <div style={{
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      backgroundColor: '#e74c3c', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1.5px solid #ffffff', zIndex: 2,
+                      marginLeft: '-5px',
+                    }}>
+                      <MiniFilledHeart size={10} />
+                    </div>
+                    <div style={{
+                      width: '20px', height: '20px', borderRadius: '50%',
+                      backgroundColor: '#f7b928', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1.5px solid #ffffff', zIndex: 1,
+                      marginLeft: '-5px',
+                    }}>
+                      <MiniHahaFace size={10} />
+                    </div>
+                  </>
+                ) : (
+                  <div style={{
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    backgroundColor: getReactionBgColor(reactionType), display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1.5px solid #ffffff', zIndex: 3,
+                    marginLeft: '0',
+                  }}>
+                    {getReactionEmoji(reactionType, 11)}
+                  </div>
+                )}
+                {reactionType !== 'like' && (
+                  <span style={{ fontSize: '12px', color: '#6d7380', fontWeight: 600, marginLeft: '2px' }}>+</span>
+                )}
               </div>
             )}
             <span style={{ fontSize: '12px', color: '#6d7380', fontWeight: 600 }}>

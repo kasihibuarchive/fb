@@ -1,6 +1,182 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
+Task ID: 12
+Agent: WebDevReview Cron Agent (Round 4)
+Task: v11.0 — Feature expansion, styling polish, new presets
+
+Work Log:
+- Read worklog and all source files to understand v10.0 codebase (2624 + 2118 lines)
+- QA with agent-browser: all 12 presets load correctly, zero errors, zero console warnings
+- **v11.0 Feature Implementation** (Task ID 10):
+  - Added `ReactionType` type: `'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry'`
+  - 4 new FBPostData fields: `reactionType`, `postTextColor`, `imageGridLayout`, `showVerifiedBadge`
+  - Exported `reactionTypeOptions` constant (6 options with emoji, label, color)
+  - 3 new SVG components: `MiniWowFace`, `MiniSadFace`, `MiniAngryFace` (html2canvas compatible)
+  - Helper functions: `getReactionEmoji()`, `getReactionBgColor()`
+  - Verified badge: blue circle with white checkmark next to username when enabled
+  - Custom text color: post content uses `postTextColor || '#1d2129'`
+  - Reaction-aware engagement: single primary emoji circle when reactionType !== 'like'
+  - Improved PhotoGrid: 3 layout modes (auto, grid2x2, grid2x3) with +N overlay
+  - 3 new presets: Travel Check-in (✈️), Photo Album (📸), Romantic Post (💕)
+  - Editor controls: Reaction Type Selector, Verified Badge Toggle, Post Text Color picker, Photo Grid Layout dropdown
+  - 3 new preview header badges: Verified, Reaction type, Custom Color
+- **v11.0-b Styling Polish** (Task ID 11):
+  - Editor header: gradient background `linear-gradient(135deg, #4267B2, #3b5998, #355089)`, larger "f" logo with glow
+  - Version badge: pill-shaped with semi-transparent border
+  - Preset buttons: hover scale (1.02), border-color highlight, box-shadow, larger emoji (16px)
+  - Section headers: increased padding (py-1), left accent border when expanded, smooth chevron rotation
+  - Export buttons: emoji prefixes (📥📷📋), gradient primary button, dark-mode-aware
+  - Footer: "Made with ❤️" prefix, improved spacing, dark mode support
+  - Dark mode: smoother theme transition, gradient background `#1a1a2e → #16213e`, blue focus glow
+  - Custom scrollbar: 6px width, rounded, theme-aware colors
+- Full QA verification with agent-browser:
+  - All 15 presets load correctly without errors
+  - Dark mode toggle works with smooth transitions
+  - No console errors, no runtime errors
+  - ESLint: clean (0 errors)
+
+Stage Summary:
+- **Version 11.0** — 6 new features + 3 new presets + 8 styling improvements
+- 6 new features: Verified badge, Reaction type selector (6 types), Post text color, Photo grid layout (3 modes), Reaction-aware engagement, Reaction SVG components
+- 3 new presets: Travel Check-in (✈️ with verified badge), Photo Album (📸 with love reaction), Romantic Post (💕 with custom color)
+- 8 styling improvements: Header gradient, preset button polish, section header accents, export button redesign, footer enhancement, dark mode gradient + transitions, custom scrollbar, version badge pill
+- Total preset count: 15
+- FBPostData now has 39+ fields
+
+---
+## Project Status Assessment (Updated after v11.0)
+
+**Current Status:** ✅ v11.0 — Feature expansion + styling polish
+
+**Bug Status:** No bugs. All presets load correctly. Zero runtime errors.
+
+**Completed Features (v1.0 through v11.0):**
+- 40+ editable post fields (name, timestamp, content, images, links, poll, life event, group, etc.)
+- 15 quick presets covering diverse post types
+- Full Facebook page layout (nav bar, left sidebar, right sidebar, footer)
+- Multiple photo grid layouts (auto, 2x2, 2x3)
+- 6 reaction types with custom SVG icons
+- Post text styling (bold, italic, large, custom color)
+- 6 engagement visibility/reaction options
+- Verified badge, pinned post, sponsored, custom badge banners
+- Comment system with reply threads
+- Emoji picker, timestamp presets, date picker
+- Export: PNG 3x, PNG 2x, JPEG 3x, Copy to clipboard
+- Save/Load/Export/Import JSON
+- Shareable URL, keyboard shortcuts
+- Dark mode with smooth transitions
+- Custom scrollbar, polished editor UI
+
+**Potential Improvements for Next Phase:**
+1. Drag-and-drop image upload (drag files directly onto the photo area)
+2. Post templates gallery with visual browsing
+3. Shareable URL with encoded post data (deep link sharing)
+4. Undo/redo for editing
+5. Additional post types: Event, Milestone, Fundraiser
+6. Custom avatar generation (avatar creator)
+7. Animated reaction effects in preview
+8. Post scheduler mock (timestamp in future with countdown)
+
+---
+Task ID: 11
+Agent: Styling Expert
+Task: v11.0-b — Editor styling polish and dark mode enhancements
+
+Work Log:
+- Applied subtle gradient background to header: `linear-gradient(135deg, #4267B2, #3b5998, #355089)` for light mode
+- Added bottom border `rgba(255,255,255,0.1)` to header for subtle separation
+- Made "f" logo slightly larger (36px, 24px font), added box-shadow glow and text-shadow
+- Styled version badge as pill with `borderRadius: 10px`, border, and padding
+- Improved preset button hover effects: `scale(1.02)`, `borderColor: #3b5998`, subtle box-shadow
+- Made preset emoji text larger (`fontSize: 16px`)
+- Updated all 8 collapsible section headers (Poll, Life Event, Tagged Friends, Shared Link, Comments, Post Extras, Group Post, Advanced Options):
+  - Changed padding from `py-0.5` to `py-1`
+  - Added left accent border `2px solid #3b5998` when expanded
+  - Improved chevron transition to `transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)`
+- Redesigned export buttons with emoji prefixes (📥 PNG, 📷 JPEG, 📋 Copy), gradient on primary, dark-mode-aware styling
+- Improved footer with dark mode support, "Made with ❤️" prefix, better typography spacing
+- Enhanced dark mode: main container smooth transition, warmer background gradient `linear-gradient(135deg, #1a1a2e, #16213e)`
+- Added `fileInputFocusStyle` for blue glow on input focus in dark mode
+- Added custom scrollbar CSS (webkit) with dark/light mode colors, applied `custom-scrollbar` class to scrollable editor container
+- Added `<style>` tag with dynamic scrollbar styles at end of JSX
+- ESLint: clean (0 errors, 0 warnings)
+
+Stage Summary:
+- 8 categories of styling polish applied to the editor UI
+- Header: gradient background, logo glow, pill version badge
+- Preset buttons: improved hover with scale/shadow/border effects, larger emoji
+- Section headers: accent borders, smoother transitions, more padding
+- Export buttons: emoji prefixes, gradient primary, dark-mode aware
+- Footer: dark mode support, "Made with ❤️", improved typography
+- Dark mode: smoother transitions, warmer gradient background, input focus glow
+- Scrollbar: custom styled scrollbar for editor panel
+- No functionality or data logic changed — purely visual improvements
+
+---
+Task ID: 10
+Agent: WebDevReview Cron Agent (Round 4)
+Task: v11.0 — New features, styling improvements, presets
+
+Work Log:
+- Read worklog and all source files to understand v10.0 codebase
+- **Added 4 new FBPostData fields** for v11.0:
+  - `reactionType: ReactionType` (default 'like') — selects primary reaction emoji in engagement section
+  - `postTextColor: string` (default '') — custom text color for post content
+  - `imageGridLayout: 'auto' | 'grid2x2' | 'grid2x3'` (default 'auto') — photo grid layout mode
+  - `showVerifiedBadge: boolean` (default false) — shows blue verified checkmark next to username
+- **Added new type and exports**:
+  - `ReactionType` type ('like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry')
+  - `reactionTypeOptions` constant array with emoji, label, and color for each reaction
+- **Added 3 new SVG components** (html2canvas compatible inline SVGs):
+  - `MiniWowFace` — yellow circle with O-shaped mouth and raised eyebrows
+  - `MiniSadFace` — yellow circle with frown and worried brows
+  - `MiniAngryFace` — red-tinted circle with furrowed brows
+- **Added helper functions**:
+  - `getReactionEmoji(type, size)` — returns the appropriate SVG component for each reaction type
+  - `getReactionBgColor(type)` — returns the background color for each reaction type circle
+- **Updated `fb-post-preview.tsx`**:
+  - Verified badge renders as blue circle with white checkmark SVG next to username when `showVerifiedBadge` is true
+  - Post content text color uses `postTextColor || '#1d2129'` for custom color support
+  - Engagement section modified: when `reactionType !== 'like'`, shows single primary reaction emoji circle + "+" instead of 3 overlapping circles
+  - `PhotoGrid` component updated to accept `imageGridLayout` prop with 3 modes:
+    - `auto`: existing behavior (1: full, 2: side-by-side, 3: 1+2, 4+: 2x2 with +N)
+    - `grid2x2`: strict 2×2 grid for 4+ images, +N overlay on 4th if more
+    - `grid2x3`: 3-column grid with first image spanning 2 rows, +N overlay on 6th if >6 images
+  - All new fields wired through FBPostPreview → PostCard component chain (both call sites)
+- **Added 3 new presets**:
+  - **Travel Check-in** (✈️) — Emma Watson in Paris with location, feeling, verified badge, 2 comments (one with reply)
+  - **Photo Album** (📸) — National Geographic wildlife post with verified badge, love reaction, grid2x3 layout, 2 comments
+  - **Romantic Post** (💕) — Michael Chang Valentine's post with love reaction, custom red text color (#c62828), 2 comments (one with reply)
+- **Updated `fb-post-generator.tsx`**:
+  - Version bump v10.0 → v11.0
+  - New imports: `ReactionType`, `reactionTypeOptions` from preview module
+  - 4 new state variables: `reactionType`, `postTextColor`, `imageGridLayout`, `showVerifiedBadge`
+  - `applyPreset` and `loadSavedPost` updated to sync new state variables with preset data
+  - `resetAll` updated to reset new fields to defaults
+  - `FBPostPreview` receives merged data: `{ ...postData, reactionType, postTextColor, imageGridLayout, showVerifiedBadge }`
+  - **New Post Extras controls**:
+    - **Reaction Type Selector** — Row of 6 emoji buttons with colored border when selected
+    - **Verified Badge Toggle** — On/Off button with blue checkmark icon
+    - **Post Text Color** — Color picker + text input combo with clear button
+  - **New Advanced Options control**:
+    - **Photo Grid Layout** — Dropdown selector (Auto / 2×2 Grid / 2×3 Grid)
+  - **3 new preview header badges**:
+    - "✓ Verified" (blue) — shows when verified badge is enabled
+    - "{emoji} {label}" (red) — shows when reaction type is not 'like'
+    - "🎨 Custom Color" (purple) — shows when custom text color is set
+- ESLint: clean (0 errors, 0 warnings)
+- Dev server: compiled successfully
+
+Stage Summary:
+- **Version 11.0** — 4 new fields, 6 new features, 3 new presets
+- 4 new FBPostData fields: reactionType, postTextColor, imageGridLayout, showVerifiedBadge
+- 6 new features: Verified badge, reaction type selector, post text color, improved photo grid (3 layouts), 3 new reaction SVGs, reaction-aware engagement display
+- 3 new presets: Travel Check-in (✈️), Photo Album (📸), Romantic Post (💕)
+- Total preset count: 15 (12 existing + 3 new)
+- FBPostData now has 39+ fields
+
+---
 Task ID: 9
 Agent: WebDevReview Cron Agent (Round 3)
 Task: v10.0 — Bug fix, new features, QA

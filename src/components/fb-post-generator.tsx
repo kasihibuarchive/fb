@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions } from './fb-post-preview'
+import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -77,6 +77,10 @@ export default function FBPostGenerator() {
   const [datePickerYear, setDatePickerYear] = useState(2014)
   const [savedPosts, setSavedPosts] = useState<SavedPost[]>([])
   const [resetPending, setResetPending] = useState(false)
+  const [reactionType, setReactionType] = useState<ReactionType>('like')
+  const [postTextColor, setPostTextColor] = useState('')
+  const [imageGridLayout, setImageGridLayout] = useState<'auto' | 'grid2x2' | 'grid2x3'>('auto')
+  const [showVerifiedBadge, setShowVerifiedBadge] = useState(false)
   const { toast } = useToast()
 
   // ── Initialize from localStorage ──
@@ -112,6 +116,10 @@ export default function FBPostGenerator() {
 
   const applyPreset = useCallback((data: FBPostData) => {
     setPostData(data)
+    setReactionType(data.reactionType || 'like')
+    setPostTextColor(data.postTextColor || '')
+    setImageGridLayout(data.imageGridLayout || 'auto')
+    setShowVerifiedBadge(data.showVerifiedBadge || false)
     setExpandedSections({
       link: data.sharedLink, comment: data.showCommentPreview, advanced: false,
       taggedFriends: false, postExtras: false, groupPost: !!data.groupPostName,
@@ -136,6 +144,10 @@ export default function FBPostGenerator() {
     setCustomFeeling('')
     setCustomLifeEventCategory('')
     setResetPending(false)
+    setReactionType('like')
+    setPostTextColor('')
+    setImageGridLayout('auto')
+    setShowVerifiedBadge(false)
     if (profileInputRef.current) profileInputRef.current.value = ''
     if (imageInputRef.current) imageInputRef.current.value = ''
     if (multiImageInputRef.current) multiImageInputRef.current.value = ''
@@ -168,6 +180,10 @@ export default function FBPostGenerator() {
       lifeEvent: post.data.postType === 'lifeevent', poll: post.data.postType === 'poll',
       savedPosts: true,
     })
+    setReactionType(post.data.reactionType || 'like')
+    setPostTextColor(post.data.postTextColor || '')
+    setImageGridLayout(post.data.imageGridLayout || 'auto')
+    setShowVerifiedBadge(post.data.showVerifiedBadge || false)
     toast({ title: 'Post loaded', description: `"${post.name}" applied.` })
   }, [toast])
 
@@ -518,6 +534,7 @@ export default function FBPostGenerator() {
 
   const isDark = darkMode
   const darkBg = isDark ? '#1a1a2e' : '#f0f2f5'
+  const darkBgGradient = isDark ? 'linear-gradient(135deg, #1a1a2e, #16213e)' : undefined
   const darkCard = isDark ? '#252540' : '#ffffff'
   const darkCardBorder = isDark ? '#3a3a5c' : '#dddfe2'
   const darkText = isDark ? '#e0e0e0' : '#1d2129'
@@ -528,6 +545,7 @@ export default function FBPostGenerator() {
   const darkDropdownBg = isDark ? '#252540' : '#ffffff'
   const darkDropdownHover = isDark ? '#3a3a5c' : '#e7f3ff'
   const fileInputStyle: React.CSSProperties = { borderColor: darkInputBorder, fontSize: '12px', backgroundColor: darkInputBg, color: darkText, transition: 'border-color 0.2s ease, box-shadow 0.2s ease' }
+  const fileInputFocusStyle = isDark ? { boxShadow: '0 0 0 2px rgba(66,103,178,0.3)', borderColor: '#4267B2' } : {}
 
   const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
     borderColor: active ? '#3b5998' : darkInputBorder,
@@ -617,22 +635,24 @@ export default function FBPostGenerator() {
   for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i)
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: darkBg }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: darkBg, background: darkBgGradient || darkBg, transition: 'background-color 0.3s ease, color 0.3s ease' }}>
       {/* ──── Header ──── */}
       <header className="sticky top-0 z-50 w-full border-b" style={{
         background: isDark
-          ? 'linear-gradient(180deg, #2a2a4a 0%, #1a1a2e 100%)'
-          : 'linear-gradient(180deg, #4a6fb5 0%, #3b5998 100%)',
-        borderColor: isDark ? '#3a3a5c' : '#2d4373',
+          ? 'linear-gradient(135deg, #2a2a4a 0%, #1a1a2e 100%)'
+          : 'linear-gradient(135deg, #4267B2 0%, #3b5998 50%, #355089 100%)',
+        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.1)',
       }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center" style={{
-              width: '34px', height: '34px', backgroundColor: isDark ? '#3b5998' : '#ffffff', borderRadius: '2px',
+              width: '36px', height: '36px', backgroundColor: isDark ? '#3b5998' : '#ffffff', borderRadius: '3px',
+              boxShadow: isDark ? '0 2px 8px rgba(59,89,152,0.4)' : '0 2px 8px rgba(0,0,0,0.15)',
             }}>
               <span style={{
                 fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                fontSize: '22px', fontWeight: 800, color: '#3b5998', lineHeight: 1, marginTop: '-1px',
+                fontSize: '24px', fontWeight: 800, color: '#3b5998', lineHeight: 1, marginTop: '-1px',
+                textShadow: '0 1px 4px rgba(59,89,152,0.3)',
               }}>f</span>
             </div>
             <div>
@@ -676,9 +696,15 @@ export default function FBPostGenerator() {
               title={isDark ? 'Light mode' : 'Dark mode'}>
               {isDark ? <Sun className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.8)' }} /> : <Moon className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.8)' }} />}
             </button>
-            <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded font-medium"
-              style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
-              v10.0
+            <span className="hidden sm:inline-flex text-xs font-medium"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '10px',
+                padding: '2px 8px',
+                color: 'rgba(255,255,255,0.8)',
+              }}>
+              v11.0
             </span>
           </div>
         </div>
@@ -689,7 +715,7 @@ export default function FBPostGenerator() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
           {/* ═══ Left Panel ═══ */}
           <div className="lg:col-span-5 xl:col-span-4">
-            <div className="lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:sticky lg:top-16 space-y-4 pr-1" style={{ scrollbarWidth: 'thin' }}>
+            <div className="custom-scrollbar lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:sticky lg:top-16 space-y-4 pr-1" style={{ scrollbarWidth: 'thin' }}>
 
               {/* ─── Saved Posts ─── */}
               {savedPosts.length > 0 && (
@@ -757,14 +783,14 @@ export default function FBPostGenerator() {
                           borderColor: darkCardBorder, backgroundColor: darkInputBg, color: darkText,
                           fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: '10px',
                           transform: 'scale(1)', opacity: 1,
-                          transition: 'transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease',
+                          transition: 'transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
                         }}
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#a8c7fa'; e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.opacity = '0.9' }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = darkInputBg; e.currentTarget.style.borderColor = darkCardBorder; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#3b5998'; e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,89,152,0.12)' }}
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = darkInputBg; e.currentTarget.style.borderColor = darkCardBorder; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none' }}
                         onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)' }}
-                        onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.03)' }}
+                        onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)' }}
                       >
-                        <span className="block text-base mb-0.5">{preset.emoji}</span>
+                        <span className="block mb-0.5" style={{ fontSize: '16px' }}>{preset.emoji}</span>
                         {preset.name}
                       </button>
                     ))}
@@ -1135,8 +1161,8 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Poll Section ─── */}
-                  <div>
-                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('poll')}>
+                  <div style={{ borderLeft: expandedSections.poll ? '2px solid #3b5998' : '2px solid transparent', paddingLeft: '4px' }}>
+                    <button className="w-full flex items-center justify-between py-1" onClick={() => toggleSection('poll')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
                         style={{ color: darkLabelColor, fontSize: '11px' }}>
                         <BarChart3 className="w-3 h-3" /> Poll Post
@@ -1144,7 +1170,7 @@ export default function FBPostGenerator() {
                           <span className="px-1.5 py-0 rounded text-xs font-bold" style={{ backgroundColor: '#e7f3ff', color: '#3b5998', fontSize: '9px' }}>ON</span>
                         )}
                       </div>
-                      <div style={{ transition: 'transform 0.2s ease', transform: expandedSections.poll ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                      <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.poll ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
                     </button>
                     {expandedSections.poll && (
                       <div className="space-y-2 pt-1">
@@ -1216,8 +1242,8 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Life Event Section ─── */}
-                  <div>
-                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('lifeEvent')}>
+                  <div style={{ borderLeft: expandedSections.lifeEvent ? '2px solid #3b5998' : '2px solid transparent', paddingLeft: '4px' }}>
+                    <button className="w-full flex items-center justify-between py-1" onClick={() => toggleSection('lifeEvent')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
                         style={{ color: darkLabelColor, fontSize: '11px' }}>
                         <Calendar className="w-3 h-3" /> Life Event
@@ -1225,7 +1251,7 @@ export default function FBPostGenerator() {
                           <span className="px-1.5 py-0 rounded text-xs font-bold" style={{ backgroundColor: '#e7f3ff', color: '#3b5998', fontSize: '9px' }}>ON</span>
                         )}
                       </div>
-                      <div style={{ transition: 'transform 0.2s ease', transform: expandedSections.lifeEvent ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                      <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.lifeEvent ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
                     </button>
                     {expandedSections.lifeEvent && (
                       <div className="space-y-2 pt-1">
@@ -1294,8 +1320,8 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Tagged Friends Section ─── */}
-                  <div>
-                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('taggedFriends')}>
+                  <div style={{ borderLeft: expandedSections.taggedFriends ? '2px solid #3b5998' : '2px solid transparent', paddingLeft: '4px' }}>
+                    <button className="w-full flex items-center justify-between py-1" onClick={() => toggleSection('taggedFriends')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
                         style={{ color: darkLabelColor, fontSize: '11px' }}>
                         <UserPlus className="w-3 h-3" /> Tagged Friends
@@ -1305,7 +1331,7 @@ export default function FBPostGenerator() {
                           </span>
                         )}
                       </div>
-                      <div style={{ transition: 'transform 0.2s ease', transform: expandedSections.taggedFriends ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                      <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.taggedFriends ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
                     </button>
                     {expandedSections.taggedFriends && (
                       <div className="space-y-2 pt-1">
@@ -1341,14 +1367,14 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Shared Link Section ─── */}
-                  <div>
-                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('link')}>
+                  <div style={{ borderLeft: expandedSections.link ? '2px solid #3b5998' : '2px solid transparent', paddingLeft: '4px' }}>
+                    <button className="w-full flex items-center justify-between py-1" onClick={() => toggleSection('link')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
                         style={{ color: darkLabelColor, fontSize: '11px' }}>
                         <Link className="w-3 h-3" /> Shared Link
                         <span style={{ color: darkTextSecondary, fontWeight: 400, fontSize: '10px' }}>(optional)</span>
                       </div>
-                      <div style={{ transition: 'transform 0.2s ease', transform: expandedSections.link ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                      <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.link ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
                     </button>
                     <div className="flex items-center gap-2 mb-1.5">
                       <button className="flex-1 flex items-center justify-center gap-1 py-1 rounded border text-xs font-medium transition-all"
@@ -1434,8 +1460,8 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Comments Section ─── */}
-                  <div>
-                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('comment')}>
+                  <div style={{ borderLeft: expandedSections.comment ? '2px solid #3b5998' : '2px solid transparent', paddingLeft: '4px' }}>
+                    <button className="w-full flex items-center justify-between py-1" onClick={() => toggleSection('comment')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
                         style={{ color: darkLabelColor, fontSize: '11px' }}>
                         <MessageCircle className="w-3 h-3" /> Comment Preview
@@ -1443,7 +1469,7 @@ export default function FBPostGenerator() {
                           ({postData.commentsList.length})
                         </span>
                       </div>
-                      <div style={{ transition: 'transform 0.2s ease', transform: expandedSections.comment ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                      <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.comment ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
                     </button>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <button className="flex-1 flex items-center justify-center gap-1 py-1 rounded border text-xs font-medium transition-all"
@@ -1537,13 +1563,13 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Post Extras ─── */}
-                  <div>
-                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('postExtras')}>
+                  <div style={{ borderLeft: expandedSections.postExtras ? '2px solid #3b5998' : '2px solid transparent', paddingLeft: '4px' }}>
+                    <button className="w-full flex items-center justify-between py-1" onClick={() => toggleSection('postExtras')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
                         style={{ color: darkLabelColor, fontSize: '11px' }}>
                         <Share2 className="w-3 h-3" /> Post Extras
                       </div>
-                      <div style={{ transition: 'transform 0.2s ease', transform: expandedSections.postExtras ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                      <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.postExtras ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
                     </button>
 
                     {expandedSections.postExtras && (
@@ -1655,6 +1681,77 @@ export default function FBPostGenerator() {
                             value={postData.customBadgeText} onChange={(e) => updateField('customBadgeText', e.target.value)}
                             className="text-sm h-7" style={fileInputStyle} />
                         </div>
+
+                        {/* Reaction Type Selector */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>
+                              Reaction
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            {reactionTypeOptions.map(opt => (
+                              <button
+                                key={opt.value}
+                                onClick={() => setReactionType(opt.value)}
+                                style={{
+                                  fontSize: '18px', width: '34px', height: '34px',
+                                  borderRadius: '6px', border: reactionType === opt.value ? `2px solid ${opt.color}` : '2px solid transparent',
+                                  backgroundColor: reactionType === opt.value ? `${opt.color}15` : 'transparent',
+                                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                title={opt.label}
+                              >
+                                {opt.icon}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Verified Badge Toggle */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <svg viewBox="0 0 24 24" width="12" height="12" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="12" cy="12" r="12" fill="#3b5998"/>
+                              <path d="M9.5 16.5l-4-4 1.5-1.5 2.5 2.5 6-6 1.5 1.5-7.5 7.5z" fill="#ffffff" stroke="#ffffff" strokeWidth="0.5"/>
+                            </svg>
+                            <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>
+                              Verified ✓
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={toggleBtnStyle(showVerifiedBadge)}
+                            onClick={() => setShowVerifiedBadge(!showVerifiedBadge)}>
+                            {showVerifiedBadge ? '✓ On' : 'Off'}
+                          </button>
+                        </div>
+
+                        {/* Post Text Color */}
+                        <div className="flex items-center justify-between">
+                          <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>
+                            Text Color
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <input
+                              type="color"
+                              value={postTextColor || '#1d2129'}
+                              onChange={e => setPostTextColor(e.target.value)}
+                              style={{ width: '28px', height: '28px', border: `1px solid ${darkInputBorder}`, borderRadius: '4px', cursor: 'pointer', padding: '0', backgroundColor: 'transparent' }}
+                            />
+                            <input
+                              type="text"
+                              value={postTextColor}
+                              onChange={e => setPostTextColor(e.target.value)}
+                              placeholder="#1d2129"
+                              className="text-xs rounded border px-1.5 py-1"
+                              style={{ borderColor: darkInputBorder, backgroundColor: darkInputBg, color: darkLabelColor, fontSize: '12px', width: '90px', height: '28px' }}
+                            />
+                            {postTextColor && (
+                              <button onClick={() => setPostTextColor('')} style={{ fontSize: '11px', color: '#9197a3', cursor: 'pointer', background: 'none', border: 'none' }}>✕</button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1662,8 +1759,8 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Group Post Section ─── */}
-                  <div>
-                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('groupPost')}>
+                  <div style={{ borderLeft: expandedSections.groupPost ? '2px solid #3b5998' : '2px solid transparent', paddingLeft: '4px' }}>
+                    <button className="w-full flex items-center justify-between py-1" onClick={() => toggleSection('groupPost')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
                         style={{ color: darkLabelColor, fontSize: '11px' }}>
                         <UsersRound className="w-3 h-3" /> Group Post
@@ -1671,7 +1768,7 @@ export default function FBPostGenerator() {
                           <span className="px-1.5 py-0 rounded text-xs font-bold" style={{ backgroundColor: '#e7f3ff', color: '#3b5998', fontSize: '9px' }}>ON</span>
                         )}
                       </div>
-                      <div style={{ transition: 'transform 0.2s ease', transform: expandedSections.groupPost ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                      <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.groupPost ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
                     </button>
                     {expandedSections.groupPost && (
                       <div className="space-y-2 pt-1">
@@ -1716,8 +1813,8 @@ export default function FBPostGenerator() {
                   <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Advanced Options ─── */}
-                  <div>
-                    <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('advanced')}>
+                  <div style={{ borderLeft: expandedSections.advanced ? '2px solid #3b5998' : '2px solid transparent', paddingLeft: '4px' }}>
+                    <button className="w-full flex items-center justify-between py-1" onClick={() => toggleSection('advanced')}>
                       <div className="text-xs font-semibold flex items-center gap-1.5"
                         style={{ color: darkLabelColor, fontSize: '11px' }}>
                         <Monitor className="w-3 h-3" /> Advanced Options
@@ -1731,7 +1828,7 @@ export default function FBPostGenerator() {
                           {enabledAdvancedCount}
                         </span>
                       </div>
-                      <div style={{ transition: 'transform 0.2s ease', transform: expandedSections.advanced ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
+                      <div style={{ transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', transform: expandedSections.advanced ? 'rotate(180deg)' : 'rotate(0deg)' }}><ChevronDown className="w-3 h-3" style={{ color: darkTextSecondary }} /></div>
                     </button>
 
                     {expandedSections.advanced && (
@@ -1929,6 +2026,29 @@ export default function FBPostGenerator() {
                             ))}
                           </select>
                         </div>
+
+                        {/* Photo Grid Layout */}
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <ImageIcon className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>
+                              Photo Grid
+                            </span>
+                          </div>
+                          <select
+                            value={imageGridLayout}
+                            onChange={e => setImageGridLayout(e.target.value as 'auto' | 'grid2x2' | 'grid2x3')}
+                            className="text-xs rounded border px-2 py-1.5 w-full"
+                            style={{
+                              borderColor: darkInputBorder, backgroundColor: darkInputBg, color: darkLabelColor,
+                              fontSize: '11px', height: '28px',
+                            }}
+                          >
+                            <option value="auto">Auto</option>
+                            <option value="grid2x2">2×2 Grid</option>
+                            <option value="grid2x3">2×3 Grid</option>
+                          </select>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1953,51 +2073,51 @@ export default function FBPostGenerator() {
               </Card>
 
               {/* ─── Export Section ─── */}
-              <Card className="border shadow-sm" style={{ borderColor: '#dddfe2' }}>
+              <Card className="border shadow-sm" style={{ borderColor: darkCardBorder, backgroundColor: darkCard }}>
                 <CardContent className="px-4 py-3 space-y-2">
                   <div className="grid grid-cols-2 gap-1.5">
                     <Button
                       className="text-xs gap-1 font-semibold"
                       style={{
-                        backgroundColor: '#3b5998', color: '#fff', fontSize: '10px', height: '32px',
-                        borderColor: '#3b5998',
+                        background: 'linear-gradient(135deg, #4267B2, #3b5998)', color: '#fff', fontSize: '10px', height: '34px',
+                        borderColor: '#3b5998', boxShadow: '0 2px 8px rgba(59,89,152,0.25)',
                       }}
                       onClick={() => handleDownload('png', 3)}
                       disabled={isDownloading}
                     >
-                      <Download className="w-3 h-3" /> PNG 3x
+                      📥 PNG 3x
                     </Button>
                     <Button
                       className="text-xs gap-1 font-semibold"
                       style={{
-                        backgroundColor: '#ffffff', color: darkLabelColor, fontSize: '10px', height: '32px',
-                        borderColor: '#dddfe2',
+                        backgroundColor: darkCard, color: darkLabelColor, fontSize: '10px', height: '34px',
+                        borderColor: darkCardBorder,
                       }}
                       onClick={() => handleDownload('png', 2)}
                       disabled={isDownloading}
                     >
-                      <Download className="w-3 h-3" /> PNG 2x
+                      📥 PNG 2x
                     </Button>
                     <Button
                       className="text-xs gap-1 font-semibold"
                       style={{
-                        backgroundColor: '#ffffff', color: darkLabelColor, fontSize: '10px', height: '32px',
-                        borderColor: '#dddfe2',
+                        backgroundColor: darkCard, color: darkLabelColor, fontSize: '10px', height: '34px',
+                        borderColor: darkCardBorder,
                       }}
                       onClick={() => handleDownload('jpeg', 3)}
                       disabled={isDownloading}
                     >
-                      <FileImage className="w-3 h-3" /> JPEG 3x
+                      📷 JPEG 3x
                     </Button>
                     <Button
                       className="text-xs gap-1 font-semibold"
                       style={{
-                        backgroundColor: '#ffffff', color: darkLabelColor, fontSize: '10px', height: '32px',
-                        borderColor: '#dddfe2',
+                        backgroundColor: darkCard, color: darkLabelColor, fontSize: '10px', height: '34px',
+                        borderColor: darkCardBorder,
                       }}
                       onClick={handleCopyToClipboard}
                     >
-                      <Copy className="w-3 h-3" /> Copy Image
+                      📋 Copy Image
                     </Button>
                   </div>
                   {isDownloading && (
@@ -2083,6 +2203,12 @@ export default function FBPostGenerator() {
                       🖼 Multi-Photo
                     </span>
                   )}
+                  {showVerifiedBadge && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                    style={{ backgroundColor: '#e8f0fe', color: '#3b5998', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>✓ Verified</span>}
+                  {reactionType !== 'like' && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                    style={{ backgroundColor: '#fce4ec', color: '#c62828', borderColor: '#f48fb1', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>{reactionTypeOptions.find(r => r.value === reactionType)?.icon} {reactionTypeOptions.find(r => r.value === reactionType)?.label}</span>}
+                  {postTextColor && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                    style={{ backgroundColor: '#f3e5f5', color: '#7b1fa2', borderColor: '#ce93d8', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🎨 Custom Color</span>}
                   <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
                     style={{ backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                     2014 Style
@@ -2094,7 +2220,7 @@ export default function FBPostGenerator() {
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                 border: '1px solid #dddfe2',
               }}>
-                <FBPostPreview ref={previewRef} data={postData} />
+                <FBPostPreview ref={previewRef} data={{ ...postData, reactionType, postTextColor, imageGridLayout, showVerifiedBadge }} />
               </div>
             </div>
           </div>
@@ -2103,16 +2229,32 @@ export default function FBPostGenerator() {
 
       {/* ──── Footer ──── */}
       <footer style={{
-        borderTop: '1px solid #dddfe2',
-        padding: '12px 20px',
+        borderTop: `1px solid ${isDark ? '#3a3a5c' : '#dddfe2'}`,
+        padding: '14px 20px',
         textAlign: 'center',
         fontSize: '11px',
-        color: '#9197a3',
-        backgroundColor: '#f0f2f5',
+        color: isDark ? '#a0a0b8' : '#9197a3',
+        backgroundColor: isDark ? '#161628' : '#f0f2f5',
         marginTop: 'auto',
+        letterSpacing: '0.01em',
       }}>
-        2014 Facebook Post Generator &middot; For entertainment purposes only
+        Made with ❤️ &middot; 2014 Facebook Post Generator &middot; For entertainment purposes only
       </footer>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: ${isDark ? '#3a3a5c' : '#c4c4c4'};
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: ${isDark ? '#4a4a6c' : '#a0a0a0'};
+        }
+      `}</style>
     </div>
   )
 }
