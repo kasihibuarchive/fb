@@ -678,7 +678,7 @@ export default function FBPostGenerator() {
             </button>
             <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded font-medium"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
-              v9.0
+              v10.0
             </span>
           </div>
         </div>
@@ -1614,6 +1614,47 @@ export default function FBPostGenerator() {
                             ))}
                           </select>
                         </div>
+
+                        {/* Pinned Post */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <svg viewBox="0 0 16 16" width="12" height="12" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M10 1L4 7v8h3v-5h2v5h3V7L10 1z" fill="#3b5998" opacity="0.7"/>
+                            </svg>
+                            <span style={{ fontSize: '11px', color: darkLabelColor, fontWeight: 600 }}>
+                              Pinned Post
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={toggleBtnStyle(postData.isPinned)}
+                            onClick={() => updateField('isPinned', !postData.isPinned)}>
+                            {postData.isPinned ? 'On' : 'Off'}
+                          </button>
+                        </div>
+
+                        {/* Sponsored By */}
+                        <div className="space-y-0.5">
+                          <Label className="text-xs font-semibold flex items-center gap-1"
+                            style={{ color: darkLabelColor, fontSize: '11px' }}>
+                            <span style={{ fontSize: '10px' }}>📢</span> Sponsored By
+                            <span style={{ color: darkTextSecondary, fontWeight: 400, fontSize: '10px' }}>(advertiser name)</span>
+                          </Label>
+                          <Input type="text" placeholder="e.g. TrendyApp"
+                            value={postData.sponsoredBy} onChange={(e) => updateField('sponsoredBy', e.target.value)}
+                            className="text-sm h-7" style={fileInputStyle} />
+                        </div>
+
+                        {/* Custom Badge Text */}
+                        <div className="space-y-0.5">
+                          <Label className="text-xs font-semibold flex items-center gap-1"
+                            style={{ color: darkLabelColor, fontSize: '11px' }}>
+                            <span style={{ fontSize: '10px' }}>⚡</span> Custom Badge
+                            <span style={{ color: darkTextSecondary, fontWeight: 400, fontSize: '10px' }}>(yellow banner)</span>
+                          </Label>
+                          <Input type="text" placeholder="e.g. Breaking News, Important Update"
+                            value={postData.customBadgeText} onChange={(e) => updateField('customBadgeText', e.target.value)}
+                            className="text-sm h-7" style={fileInputStyle} />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2016,6 +2057,24 @@ export default function FBPostGenerator() {
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
                       style={{ backgroundColor: '#fef3c7', color: '#92400e', borderColor: '#f0d68a', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       {postData.textStyle === 'bold' ? 'B Bold' : postData.textStyle === 'italic' ? 'I Italic' : 'Aa Large'}
+                    </span>
+                  )}
+                  {postData.isPinned && (
+                    <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                      style={{ backgroundColor: '#e8f0fe', color: '#1a56db', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      📌 Pinned
+                    </span>
+                  )}
+                  {postData.sponsoredBy && (
+                    <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                      style={{ backgroundColor: '#f3f4f6', color: '#4b5563', borderColor: '#d1d5db', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      📢 Sponsored
+                    </span>
+                  )}
+                  {postData.customBadgeText && (
+                    <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                      style={{ backgroundColor: '#fff8e1', color: '#e65100', borderColor: '#ffcc02', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      ⚡ {postData.customBadgeText}
                     </span>
                   )}
                   {validImages.length >= 2 && (

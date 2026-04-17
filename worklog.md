@@ -1,6 +1,67 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
+Task ID: 9
+Agent: WebDevReview Cron Agent (Round 3)
+Task: v10.0 — Bug fix, new features, QA
+
+Work Log:
+- Read worklog and all source files to understand v9.0 codebase
+- **QA with agent-browser revealed critical runtime error**: `React is not defined` at fb-post-preview.tsx:999
+  - Root cause: `React.useState(false)` used in `FacebookLeftSidebar` component, but React imported as type-only (`import type React`)
+  - Fix: Changed `React.useState(false)` → `useState(false)` (useState already imported on line 4)
+  - App was completely broken (showing "Application error" overlay) before fix
+- **Added 3 new FBPostData fields** for v10.0:
+  - `isPinned: boolean` (default false) — shows "Pinned Post" blue banner at top of post card
+  - `sponsoredBy: string` (default '') — shows "Sponsored · {advertiser}" gray banner
+  - `customBadgeText: string` (default '') — shows custom yellow info banner
+- **Updated `fb-post-preview.tsx`**:
+  - Fixed `React.useState` → `useState` bug
+  - Added Pinned Post banner rendering (blue #e8f0fe background, house icon, "Pinned Post" text)
+  - Added Sponsored banner rendering (gray #f7f7f7 background, "Sponsored · {name}" + close X icon)
+  - Added Custom Badge rendering (yellow #fff8e1 background, info icon, custom text)
+  - All three banners render at top of post card (before Group Post header)
+  - @mention highlighting already existed in `renderTextWithHighlights` function
+  - Wired new fields through FBPostPreview → PostCard component chain (both call sites)
+- **Updated `fb-post-generator.tsx`**:
+  - Version bump v9.0 → v10.0
+  - Added 3 new controls in Post Extras section:
+    - **Pinned Post toggle** — On/Off button with house icon
+    - **Sponsored By input** — text field for advertiser name (placeholder "e.g. TrendyApp")
+    - **Custom Badge input** — text field for custom banner text (placeholder "e.g. Breaking News")
+  - Added 3 new preview header badges:
+    - 📌 Pinned (blue) — shows when post is pinned
+    - 📢 Sponsored (gray) — shows when sponsoredBy is set
+    - ⚡ Custom text (yellow) — shows when customBadgeText is set
+- **Added 2 new presets**:
+  - **Breaking News** (📰) — CNN Breaking News MH17 story with:
+    - `isPinned: true`, `textStyle: 'bold'`, `highlightHashtags: true`
+    - 15,623 likes, 4,521 comments, 8,934 shares
+    - Full Facebook layout (nav bar + sidebars + more stories)
+    - 3 comments (first with reply thread)
+  - **Sponsored Ad** (📢) — Spotify Premium ad with:
+    - `sponsoredBy: 'Spotify'`, shared link preview
+    - 1,243 likes, 89 comments, 234 shares
+    - Full Facebook layout (nav bar + sidebars)
+- Full QA verification with agent-browser:
+  - All 12 presets load correctly (10 existing + 2 new)
+  - Pinned Post banner renders correctly
+  - Sponsored banner renders correctly with advertiser name
+  - No console errors, no runtime errors
+  - ESLint: clean (0 errors)
+- Total preset count: 12 (added Breaking News, Sponsored Ad)
+- FBPostData now has 35+ fields
+
+Stage Summary:
+- **Version 10.0** — Bug fix + 3 new features + 2 new presets
+- Critical bug fixed: React.useState → useState (app was completely broken)
+- 3 new features: Pinned Post banner, Sponsored banner, Custom Badge
+- 3 new Post Extras controls in editor
+- 3 new preview header badges
+- 2 new presets: Breaking News (📰), Sponsored Ad (📢)
+- All QA tests pass with zero errors
+
+---
 Task ID: 1
 Agent: Main Developer
 Task: Build complete 2014 Facebook Post Generator web application

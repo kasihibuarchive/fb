@@ -299,6 +299,10 @@ export interface FBPostData {
   pollVotes: number[]
   pollTotalVotes: number
   textStyle: 'normal' | 'bold' | 'italic' | 'large'
+  // v10.0 new fields
+  isPinned: boolean
+  sponsoredBy: string
+  customBadgeText: string
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -365,6 +369,10 @@ export const defaultPostData: FBPostData = {
   pollVotes: [],
   pollTotalVotes: 0,
   textStyle: 'normal',
+  // v10.0 defaults
+  isPinned: false,
+  sponsoredBy: '',
+  customBadgeText: '',
 }
 
 export const feelingOptions = [
@@ -658,6 +666,56 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       topLikerName: 'Nature Lover',
     },
   },
+  {
+    name: 'Breaking News',
+    emoji: '📰',
+    data: {
+      ...defaultPostData,
+      userName: 'CNN Breaking News',
+      timestamp: 'July 17, 2014 at 8:45 AM',
+      postContent: 'BREAKING: Malaysia Airlines Flight MH17 shot down over eastern Ukraine. All 298 people on board are feared dead. The Boeing 777 was flying from Amsterdam to Kuala Lumpur when it disappeared from radar.\n\n#MH17 #Ukraine #BreakingNews',
+      likes: 15623,
+      comments: 4521,
+      shares: 8934,
+      topLikerName: 'BBC World',
+      highlightHashtags: true,
+      textStyle: 'bold',
+      isPinned: true,
+      showCommentPreview: true,
+      showNavBar: true,
+      showSidebars: true,
+      commentsList: [
+        { id: '1', commenterName: 'Sarah Mitchell', commenterAvatar: defaultAvatar, commentText: 'This is absolutely devastating. My thoughts and prayers are with all the families. 😢', commentTimestamp: '3 hrs', commentLikes: 234, replies: [
+          { id: 'r1', name: 'David Park', avatar: defaultAvatar, text: 'Heartbreaking. The world needs to come together.', timestamp: '2 hrs' },
+        ] },
+        { id: '2', commenterName: 'James Wilson', commenterAvatar: defaultAvatar, commentText: 'I was just on that flight route last month. This is so surreal and terrifying.', commentTimestamp: '2 hrs', commentLikes: 89, replies: [] },
+        { id: '3', commenterName: 'Maria Garcia', commenterAvatar: defaultAvatar, commentText: 'The international community must investigate this immediately. Unacceptable.', commentTimestamp: '1 hr', commentLikes: 156, replies: [] },
+      ],
+      showMoreStories: true,
+    },
+  },
+  {
+    name: 'Sponsored Ad',
+    emoji: '📢',
+    data: {
+      ...defaultPostData,
+      userName: 'Spotify',
+      timestamp: 'June 3, 2014 · Sponsored',
+      postContent: 'Discover your summer soundtrack 🎵\n\nSpotify Premium — 30 days free. Millions of songs, no ads, offline listening.\n\nStart your free trial today!',
+      sharedLink: true,
+      linkTitle: 'Spotify Premium — Music for everyone',
+      linkDomain: 'spotify.com',
+      linkDescription: 'Play any song, anytime. No ads, no interruptions. Download music for offline listening.',
+      likes: 1243,
+      comments: 89,
+      shares: 234,
+      topLikerName: 'Music Lovers',
+      sponsoredBy: 'Spotify',
+      highlightHashtags: true,
+      showNavBar: true,
+      showSidebars: true,
+    },
+  },
 ]
 
 // ──────────── Helpers ────────────
@@ -668,12 +726,15 @@ function formatEngagement(count: number): string {
   return count.toString()
 }
 
-function renderTextWithHashtags(text: string, highlight: boolean): React.ReactNode {
+function renderTextWithHighlights(text: string, highlight: boolean): React.ReactNode {
   if (!highlight) return text
-  const parts = text.split(/(#\w+)/g)
+  const parts = text.split(/(#\w+|@\w+)/g)
   return parts.map((part, i) => {
     if (part.startsWith('#')) {
       return <span key={i} style={{ color: '#3b5998', fontWeight: 700 }}>{part}</span>
+    }
+    if (part.startsWith('@')) {
+      return <span key={i} style={{ color: '#3b5998', fontWeight: 600 }}>{part}</span>
     }
     return part
   })
@@ -996,7 +1057,7 @@ function FacebookLeftSidebar({ userName, profilePicture }: { userName: string; p
     }}>&#8203;</span>
   )
 
-  const [showMoreFavourites, setShowMoreFavourites] = React.useState(false)
+  const [showMoreFavourites, setShowMoreFavourites] = useState(false)
 
   return (
     <div style={{
@@ -1315,6 +1376,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
       groupPostName, groupPostAvatar,
       postType, lifeEventCategory, lifeEventDate, lifeEventDescription, postFontFamily,
       pollQuestion, pollOptions, pollVotes, pollTotalVotes, textStyle,
+      isPinned, sponsoredBy, customBadgeText,
     } = data
 
     const hasEngagement = likes > 0 || comments > 0 || shares > 0
@@ -1388,6 +1450,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                   pollQuestion={pollQuestion} pollOptions={pollOptions}
                   pollVotes={pollVotes} pollTotalVotes={pollTotalVotes}
                   textStyle={textStyle}
+                  isPinned={isPinned} sponsoredBy={sponsoredBy} customBadgeText={customBadgeText}
                 />
                 {showMoreStories && <MoreStoriesSection />}
                 <FacebookFooter />
@@ -1425,6 +1488,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                 pollQuestion={pollQuestion} pollOptions={pollOptions}
                 pollVotes={pollVotes} pollTotalVotes={pollTotalVotes}
                 textStyle={textStyle}
+                isPinned={isPinned} sponsoredBy={sponsoredBy} customBadgeText={customBadgeText}
               />
             </div>
             {showNavBar && showMoreStories && <MoreStoriesSection />}
@@ -1667,6 +1731,16 @@ function PollCard({ question, options, votes, totalVotes }: {
                   <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ffffff' }} />
                 )}
               </div>
+              {/* Percentage bar for top-voted */}
+              {isTop && pct > 0 && (
+                <div style={{
+                  fontSize: '10px', color: '#3b5998', fontWeight: 700,
+                  whiteSpace: 'nowrap', position: 'relative', zIndex: 1,
+                  minWidth: '30px', textAlign: 'right',
+                }}>
+                  {Math.round(pct)}%
+                </div>
+              )}
               {/* Gradient progress bar */}
               <div style={{
                 position: 'absolute', left: 0, top: 0, bottom: 0,
@@ -1699,7 +1773,7 @@ function PollCard({ question, options, votes, totalVotes }: {
         borderTop: '1px solid #e5e5e5',
         backgroundColor: '#f7f8fa',
       }}>
-        {totalVotes.toLocaleString()} votes · 5 days left
+        {totalVotes.toLocaleString()} votes
       </div>
     </div>
   )
@@ -1721,6 +1795,7 @@ function PostCard({
   groupPostName, groupPostAvatar,
   postType, lifeEventCategory, lifeEventDate, lifeEventDescription, postFontFamily,
   pollQuestion, pollOptions, pollVotes, pollTotalVotes, textStyle,
+  isPinned, sponsoredBy, customBadgeText,
 }: {
   profilePicture: string
   userName: string
@@ -1775,6 +1850,9 @@ function PostCard({
   pollVotes: number[]
   pollTotalVotes: number
   textStyle: 'normal' | 'bold' | 'italic' | 'large'
+  isPinned: boolean
+  sponsoredBy: string
+  customBadgeText: string
 }) {
   const bgColor = getPostBgColor(postBackground)
   const br = borderRadius || 3
@@ -1804,6 +1882,53 @@ function PostCard({
           : bgColor,
         position: 'relative',
       }}>
+        {/* ─── Pinned Post Banner ─── */}
+        {isPinned && (
+          <div style={{
+            backgroundColor: '#e8f0fe',
+            padding: '6px 12px',
+            display: 'flex', alignItems: 'center', gap: '6px',
+            borderBottom: '1px solid #dddfe2',
+            fontSize: '11px', fontWeight: 600, color: '#3b5998',
+          }}>
+            <svg viewBox="0 0 16 16" width="12" height="12" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 1L4 7v8h3v-5h2v5h3V7L10 1z" fill="#3b5998" opacity="0.8"/>
+            </svg>
+            <span>Pinned Post</span>
+          </div>
+        )}
+
+        {/* ─── Sponsored Banner ─── */}
+        {sponsoredBy && (
+          <div style={{
+            backgroundColor: '#f7f7f7',
+            padding: '6px 12px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            borderBottom: '1px solid #dddfe2',
+            fontSize: '11px', color: '#9197a3',
+          }}>
+            <span style={{ fontWeight: 600, color: '#65676b' }}>Sponsored · {sponsoredBy}</span>
+            <CloseXIcon size={10} color="#bcc0c4" />
+          </div>
+        )}
+
+        {/* ─── Custom Badge ─── */}
+        {customBadgeText && (
+          <div style={{
+            backgroundColor: '#fff8e1',
+            padding: '5px 12px',
+            display: 'flex', alignItems: 'center', gap: '6px',
+            borderBottom: '1px solid #dddfe2',
+            fontSize: '11px', fontWeight: 600, color: '#f57c00',
+          }}>
+            <svg viewBox="0 0 16 16" width="11" height="11" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="7" fill="none" stroke="#f57c00" strokeWidth="1.3"/>
+              <path d="M8 4v5M8 10.5v.01" fill="none" stroke="#f57c00" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            <span>{customBadgeText}</span>
+          </div>
+        )}
+
         {/* ─── Group Post Header ─── */}
         {groupPostName && (
           <div style={{
@@ -1968,7 +2093,7 @@ function PostCard({
             letterSpacing: '0.01em',
             ...textStyles,
           }}>
-            {renderTextWithHashtags(displayContent, highlightHashtags)}
+            {renderTextWithHighlights(displayContent, highlightHashtags)}
             {shouldTruncate && (
               <span
                 style={{ color: '#3b5998', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
