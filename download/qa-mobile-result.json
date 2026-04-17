@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Yes, a Facebook post preview is visible and appears to be properly rendered in the mobile view. The post displays:\n\n- User profile (Jessica Williams)\n- Post timestamp (November 5, 2014 at 2:15 PM)\n- Location (Central Park, New York)\n- Post content about running the NYC Marathon\n- Hashtags (#NYCMarathon #Running #Charity #MakeADifference)\n- Engagement metrics (likes, comments, shares)\n- \"People Also Like\" section with profile pictures\n- Standard Facebook interface elements (navigation tabs, post options)\n\nThe layout matches typical Facebook mobile post formatting with no obvious rendering issues - text is legible, elements are properly aligned, and all interactive components appear functional. The \"2014 Style\" theme is clearly applied as indicated in the header.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1776439493,
+  "id": "202604172324448e676973d265447e",
+  "model": "glm-4.6v",
+  "object": "chat.completion",
+  "request_id": "202604172324448e676973d265447e",
+  "usage": {
+    "completion_tokens": 167,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 454,
+    "prompt_tokens_details": {
+      "cached_tokens": 6
+    },
+    "total_tokens": 621
+  }
+}

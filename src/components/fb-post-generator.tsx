@@ -13,7 +13,8 @@ import {
   X, Upload, Globe, Users, Lock, RotateCcw, Copy, ImageIcon, Link, MessageCircle,
   Sparkles, ChevronDown, ChevronUp, ExternalLink, FileImage, Monitor, Smartphone,
   Plus, Trash2, Hash, Scissors, Timer, Droplets, Columns3, UsersRound, Stamp,
-  MapPin, SmilePlus, UserPlus, Layers, Palette, Minus, ShieldCheck, ArrowDownNarrowWide
+  MapPin, SmilePlus, UserPlus, Layers, Palette, Minus, ShieldCheck, ArrowDownNarrowWide,
+  Moon, Sun
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -51,7 +52,23 @@ export default function FBPostGenerator() {
   const [showTimestampPresets, setShowTimestampPresets] = useState(false)
   const [newFriendName, setNewFriendName] = useState('')
   const [customFeeling, setCustomFeeling] = useState('')
+  const [darkMode, setDarkMode] = useState(false)
+  const [dragOverZone, setDragOverZone] = useState<string | null>(null)
   const { toast } = useToast()
+
+  // Initialize dark mode from localStorage
+  useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fb-gen-dark-mode')
+      if (saved === 'true') setDarkMode(true)
+    }
+  })
+
+  const toggleDarkMode = useCallback(() => {
+    const newVal = !darkMode
+    setDarkMode(newVal)
+    localStorage.setItem('fb-gen-dark-mode', String(newVal))
+  }, [darkMode])
 
   const updateField = useCallback(<K extends keyof FBPostData>(field: K, value: FBPostData[K]) => {
     setPostData(prev => ({ ...prev, [field]: value }))
@@ -231,26 +248,105 @@ export default function FBPostGenerator() {
 
   const charCount = postData.postContent.length
 
-  const fileInputStyle: React.CSSProperties = { borderColor: '#ccd0d5', fontSize: '12px' }
+  const isDark = darkMode
+  const darkBg = isDark ? '#1a1a2e' : '#f0f2f5'
+  const darkCard = isDark ? '#252540' : '#ffffff'
+  const darkCardBorder = isDark ? '#3a3a5c' : '#dddfe2'
+  const darkText = isDark ? '#e0e0e0' : '#1d2129'
+  const darkTextSecondary = isDark ? '#a0a0b8' : '#8a8d91'
+  const darkInputBg = isDark ? '#1e1e38' : '#fafbfc'
+  const darkInputBorder = isDark ? '#3a3a5c' : '#ccd0d5'
+  const darkLabelColor = isDark ? '#c0c0d8' : '#4b4f56'
+  const fileInputStyle: React.CSSProperties = { borderColor: darkInputBorder, fontSize: '12px', backgroundColor: darkInputBg, color: darkText }
 
   const toggleBtnStyle = (active: boolean): React.CSSProperties => ({
     borderColor: active ? '#3b5998' : '#e5e5e5',
     backgroundColor: active ? '#e7f3ff' : '#fafbfc',
-    color: active ? '#3b5998' : '#8a8d91',
+    color: active ? '#3b5998' : 'darkTextSecondary',
     fontSize: '10px',
   })
 
+  // Drag-and-drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent, zone: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverZone(zone)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverZone(null)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent, zone: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragOverZone(null)
+    const file = e.dataTransfer.files?.[0]
+    if (!file || !file.type.startsWith('image/')) return
+    const url = URL.createObjectURL(file)
+    if (zone === 'profile') updateField('profilePicture', url)
+    else if (zone === 'photo') updateField('attachedImage', url)
+    else if (zone === 'linkImage') updateField('linkImage', url)
+    toast({ title: 'Image added', description: `Photo uploaded via drag & drop.` })
+  }, [updateField, toast])
+
+  // Shareable URL
+  const generateShareURL = useCallback(() => {
+    try {
+      const shareData = { n: postData.userName, t: postData.timestamp, p: postData.postContent, l: postData.likes, c: postData.comments, s: postData.shares }
+      const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))))
+      const url = `${window.location.origin}${window.location.pathname}?d=${encoded}`
+      navigator.clipboard.writeText(url).then(() => {
+        toast({ title: 'Link copied!', description: 'Shareable URL copied to clipboard.' })
+      }).catch(() => {
+        toast({ title: 'Shareable URL', description: url, variant: 'default' })
+      })
+      window.history.replaceState(null, '', `?d=${encoded}`)
+    } catch {
+      toast({ title: 'Error', description: 'Failed to generate share URL.', variant: 'destructive' })
+    }
+  }, [postData, toast])
+
+  // Load from URL on mount
+  useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const d = params.get('d')
+      if (d) {
+        try {
+          const decoded = JSON.parse(decodeURIComponent(escape(atob(d))))
+          if (decoded.n || decoded.p) {
+            setPostData(prev => ({
+              ...prev,
+              userName: decoded.n || prev.userName,
+              timestamp: decoded.t || prev.timestamp,
+              postContent: decoded.p || prev.postContent,
+              likes: decoded.l ?? prev.likes,
+              comments: decoded.c ?? prev.comments,
+              shares: decoded.s ?? prev.shares,
+            }))
+            toast({ title: 'Post loaded', description: 'Post data loaded from shared URL.' })
+          }
+        } catch { /* ignore invalid data */ }
+      }
+    }
+  })
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f0f2f5' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: darkBg }}>
       {/* ──── Header ──── */}
       <header className="sticky top-0 z-50 w-full border-b" style={{
-        background: 'linear-gradient(180deg, #4a6fb5 0%, #3b5998 100%)',
-        borderColor: '#2d4373',
+        background: isDark
+          ? 'linear-gradient(180deg, #2a2a4a 0%, #1a1a2e 100%)'
+          : 'linear-gradient(180deg, #4a6fb5 0%, #3b5998 100%)',
+        borderColor: isDark ? '#3a3a5c' : '#2d4373',
       }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center" style={{
-              width: '34px', height: '34px', backgroundColor: '#ffffff', borderRadius: '2px',
+              width: '34px', height: '34px', backgroundColor: isDark ? '#3b5998' : '#ffffff', borderRadius: '2px',
             }}>
               <span style={{
                 fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
@@ -269,9 +365,19 @@ export default function FBPostGenerator() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={generateShareURL} className="flex items-center justify-center rounded border transition-all"
+              style={{ width: '32px', height: '32px', borderColor: 'rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.1)' }}
+              title="Share post via URL">
+              <Share2 className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.8)' }} />
+            </button>
+            <button onClick={toggleDarkMode} className="flex items-center justify-center rounded border transition-all"
+              style={{ width: '32px', height: '32px', borderColor: 'rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.1)' }}
+              title={isDark ? 'Light mode' : 'Dark mode'}>
+              {isDark ? <Sun className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.8)' }} /> : <Moon className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.8)' }} />}
+            </button>
             <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded font-medium"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
-              v6.0
+              v7.0
             </span>
           </div>
         </div>
@@ -285,10 +391,10 @@ export default function FBPostGenerator() {
             <div className="lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:sticky lg:top-16 space-y-4 pr-1" style={{ scrollbarWidth: 'thin' }}>
 
               {/* ─── Presets ─── */}
-              <Card className="border shadow-sm" style={{ borderColor: '#dddfe2' }}>
+              <Card className="border shadow-sm" style={{ borderColor: darkCardBorder, backgroundColor: darkCard }}>
                 <CardHeader className="pb-3 pt-3 px-4">
                   <CardTitle className="text-xs font-bold flex items-center gap-1.5"
-                    style={{ color: '#1d2129', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+                    style={{ color: darkText, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
                     <Sparkles className="w-3.5 h-3.5" style={{ color: '#3b5998' }} />
                     Quick Presets
                   </CardTitle>
@@ -299,11 +405,14 @@ export default function FBPostGenerator() {
                       <button key={i} onClick={() => applyPreset(preset.data)}
                         className="text-center text-xs font-medium px-2 py-1.5 rounded border transition-all duration-150"
                         style={{
-                          borderColor: '#e5e5e5', backgroundColor: '#fafbfc', color: '#4b4f56',
+                          borderColor: darkCardBorder, backgroundColor: darkInputBg, color: darkText,
                           fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: '10px',
+                          transform: 'scale(1)',
                         }}
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#a8c7fa' }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fafbfc'; e.currentTarget.style.borderColor = '#e5e5e5' }}
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#a8c7fa'; e.currentTarget.style.transform = 'scale(1.03)' }}
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = darkInputBg; e.currentTarget.style.borderColor = darkCardBorder; e.currentTarget.style.transform = 'scale(1)' }}
+                        onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)' }}
+                        onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.03)' }}
                       >
                         <span className="block text-base mb-0.5">{preset.emoji}</span>
                         {preset.name}
@@ -314,11 +423,11 @@ export default function FBPostGenerator() {
               </Card>
 
               {/* ─── Editor ─── */}
-              <Card className="border shadow-sm" style={{ borderColor: '#dddfe2' }}>
+              <Card className="border shadow-sm" style={{ borderColor: darkCardBorder, backgroundColor: darkCard }}>
                 <CardHeader className="pb-3 pt-3 px-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xs font-bold flex items-center gap-1.5"
-                      style={{ color: '#1d2129', fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+                      style={{ color: darkText, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
                       <svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M15 3l2 2-8.5 8.5H6.5v-2L15 3z" stroke="#3b5998" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         <rect x="3" y="16" width="14" height="1" rx="0.5" fill="#3b5998" opacity="0.3"/>
@@ -326,7 +435,7 @@ export default function FBPostGenerator() {
                       Post Editor
                     </CardTitle>
                     <Button variant="ghost" size="sm" className="h-6 px-2 text-xs"
-                      style={{ color: '#8a8d91' }} onClick={resetAll}>
+                      style={{ color: darkTextSecondary }} onClick={resetAll}>
                       <RotateCcw className="w-3 h-3 mr-1" /> Reset
                     </Button>
                   </div>
@@ -335,18 +444,24 @@ export default function FBPostGenerator() {
                   {/* Profile Picture */}
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold flex items-center gap-1"
-                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                       <User className="w-3 h-3" /> Profile Picture
                     </Label>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-sm overflow-hidden border flex-shrink-0 cursor-pointer"
-                        style={{ borderColor: '#ccd0d5', backgroundColor: '#e9eaed' }}
-                        onClick={() => profileInputRef.current?.click()}>
+                      <div
+                        className="w-10 h-10 rounded-sm overflow-hidden border flex-shrink-0 cursor-pointer relative"
+                        style={{ borderColor: dragOverZone === 'profile' ? '#3b5998' : darkInputBorder, backgroundColor: dragOverZone === 'profile' ? '#e7f3ff' : '#e9eaed', transition: 'all 0.2s' }}
+                        onClick={() => profileInputRef.current?.click()}
+                        onDragOver={(e) => handleDragOver(e, 'profile')}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, 'profile')}
+                      >
+                        {dragOverZone === 'profile' && <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(59,89,152,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '3px' }}><Upload className="w-4 h-4" style={{ color: '#3b5998' }} /></div>}
                         <img src={postData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex gap-1 flex-1">
                         <Button type="button" variant="outline" size="sm" className="flex-1 text-xs gap-1"
-                          style={{ borderColor: '#ccd0d5', color: '#4b4f56', fontSize: '10px', height: '30px' }}
+                          style={{ borderColor: '#ccd0d5', color: 'darkLabelColor', fontSize: '10px', height: '30px' }}
                           onClick={() => profileInputRef.current?.click()}>
                           <Upload className="w-3 h-3" /> Upload
                         </Button>
@@ -363,12 +478,12 @@ export default function FBPostGenerator() {
                     </div>
                   </div>
 
-                  <Separator style={{ backgroundColor: '#eee' }} />
+                  <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* User Name */}
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold flex items-center gap-1"
-                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                       <User className="w-3 h-3" /> Display Name
                     </Label>
                     <Input type="text" placeholder="Enter Facebook name"
@@ -380,7 +495,7 @@ export default function FBPostGenerator() {
                   <div className="grid grid-cols-2 gap-2.5">
                     <div className="space-y-1">
                       <Label className="text-xs font-semibold flex items-center gap-1"
-                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                         <Clock className="w-3 h-3" /> Timestamp
                       </Label>
                       <div className="flex gap-1">
@@ -393,7 +508,7 @@ export default function FBPostGenerator() {
                             className="flex items-center justify-center rounded border transition-all"
                             style={{
                               width: '30px', height: '30px', flexShrink: 0,
-                              borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#8a8d91',
+                              borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: 'darkTextSecondary',
                             }}
                             onClick={() => setShowTimestampPresets(!showTimestampPresets)}
                           >
@@ -407,7 +522,7 @@ export default function FBPostGenerator() {
                                   key={preset.label}
                                   className="w-full text-left px-3 py-1.5 text-xs transition-colors"
                                   style={{
-                                    color: '#4b4f56', fontSize: '11px',
+                                    color: 'darkLabelColor', fontSize: '11px',
                                     fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
                                   }}
                                   onClick={() => applyTimestampPreset(preset.value)}
@@ -423,7 +538,7 @@ export default function FBPostGenerator() {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs font-semibold" style={{ color: '#4b4f56', fontSize: '11px' }}>Visibility</Label>
+                      <Label className="text-xs font-semibold" style={{ color: 'darkLabelColor', fontSize: '11px' }}>Visibility</Label>
                       <div className="flex gap-0.5">
                         {visibilityOptions.map(opt => (
                           <button key={opt.value} onClick={() => updateField('visibility', opt.value)}
@@ -442,9 +557,9 @@ export default function FBPostGenerator() {
                   {/* Location */}
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold flex items-center gap-1"
-                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                       <MapPin className="w-3 h-3" /> Location
-                      <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>(check-in)</span>
+                      <span style={{ color: 'darkTextSecondary', fontWeight: 400, fontSize: '10px' }}>(check-in)</span>
                     </Label>
                     <Input type="text" placeholder="e.g. Central Park, New York"
                       value={postData.location} onChange={(e) => updateField('location', e.target.value)}
@@ -454,7 +569,7 @@ export default function FBPostGenerator() {
                   {/* Feeling/Activity */}
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold flex items-center gap-1"
-                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                       <SmilePlus className="w-3 h-3" /> Feeling/Activity
                     </Label>
                     <div className="flex gap-1.5">
@@ -463,7 +578,7 @@ export default function FBPostGenerator() {
                         onChange={(e) => updateField('feeling', e.target.value)}
                         className="text-xs rounded border px-2 py-1.5 flex-1"
                         style={{
-                          borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#4b4f56',
+                          borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: 'darkLabelColor',
                           fontSize: '11px', height: '28px',
                         }}
                       >
@@ -484,23 +599,23 @@ export default function FBPostGenerator() {
                     </div>
                   </div>
 
-                  <Separator style={{ backgroundColor: '#eee' }} />
+                  <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* Post Content with Emoji */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-semibold flex items-center gap-1"
-                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                         <Type className="w-3 h-3" /> Post Content
                       </Label>
                       <div className="flex items-center gap-2">
                         <span className="text-xs" style={{
-                          color: charCount > 63206 ? '#e41e3f' : '#bcc0c4', fontSize: '9px',
+                          color: charCount > 63206 ? '#e41e3f' : 'darkTextSecondary', fontSize: '9px',
                         }}>
                           {charCount > 63206 ? 'Limit exceeded' : `${charCount.toLocaleString()}/63,206`}
                         </span>
                         <div className="relative">
-                          <button className="p-0.5 rounded" style={{ color: '#bcc0c4' }}
+                          <button className="p-0.5 rounded" style={{ color: 'darkTextSecondary' }}
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                             <span style={{ fontSize: '14px', lineHeight: 1 }}>😊</span>
                           </button>
@@ -528,9 +643,9 @@ export default function FBPostGenerator() {
                   {/* Attached Image */}
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold flex items-center gap-1"
-                      style={{ color: '#4b4f56', fontSize: '11px' }}>
+                      style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                       <ImageIcon className="w-3 h-3" /> Attached Photo
-                      <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>(optional)</span>
+                      <span style={{ color: 'darkTextSecondary', fontWeight: 400, fontSize: '10px' }}>(optional)</span>
                     </Label>
                     {postData.attachedImage ? (
                       <div className="relative rounded overflow-hidden border" style={{ borderColor: '#ccd0d5' }}>
@@ -542,32 +657,34 @@ export default function FBPostGenerator() {
                       </div>
                     ) : (
                       <button className="w-full h-16 border border-dashed rounded flex flex-col items-center justify-center gap-0.5 transition-colors"
-                        style={{ borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#bcc0c4', cursor: 'pointer' }}
+                        style={{ borderColor: dragOverZone === 'photo' ? '#3b5998' : darkInputBorder, backgroundColor: dragOverZone === 'photo' ? '#e7f3ff' : darkInputBg, color: 'darkTextSecondary', cursor: 'pointer', transition: 'all 0.2s' }}
                         onClick={() => imageInputRef.current?.click()}
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#a8c7fa' }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fafbfc'; e.currentTarget.style.borderColor = '#ccd0d5' }}>
-                        <ImagePlus className="w-4 h-4" />
-                        <span style={{ fontSize: '10px' }}>Click to add a photo</span>
+                        onDragOver={(e) => handleDragOver(e, 'photo')}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, 'photo')}
+                        onMouseOver={(e) => { if (dragOverZone !== 'photo') { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#a8c7fa' } }}
+                        onMouseOut={(e) => { if (dragOverZone !== 'photo') { e.currentTarget.style.backgroundColor = darkInputBg; e.currentTarget.style.borderColor = darkInputBorder } }}>
+                        {dragOverZone === 'photo' ? <><Upload className="w-4 h-4 mb-0.5" style={{ color: '#3b5998' }} /><span style={{ fontSize: '10px', color: '#3b5998', fontWeight: 600 }}>Drop image here</span></> : <><ImagePlus className="w-4 h-4" /><span style={{ fontSize: '10px' }}>Click or drag to add</span></>}
                       </button>
                     )}
                     <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                   </div>
 
-                  <Separator style={{ backgroundColor: '#eee' }} />
+                  <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Tagged Friends Section ─── */}
                   <div>
                     <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('taggedFriends')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
-                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                         <UserPlus className="w-3 h-3" /> Tagged Friends
                         {postData.taggedFriends.length > 0 && (
-                          <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>
+                          <span style={{ color: 'darkTextSecondary', fontWeight: 400, fontSize: '10px' }}>
                             ({postData.taggedFriends.length})
                           </span>
                         )}
                       </div>
-                      {expandedSections.taggedFriends ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
+                      {expandedSections.taggedFriends ? <ChevronUp className="w-3 h-3" style={{ color: 'darkTextSecondary' }} /> : <ChevronDown className="w-3 h-3" style={{ color: 'darkTextSecondary' }} />}
                     </button>
                     {expandedSections.taggedFriends && (
                       <div className="space-y-2 pt-1">
@@ -600,17 +717,17 @@ export default function FBPostGenerator() {
                     )}
                   </div>
 
-                  <Separator style={{ backgroundColor: '#eee' }} />
+                  <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Shared Link Section ─── */}
                   <div>
                     <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('link')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
-                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                         <Link className="w-3 h-3" /> Shared Link
-                        <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>(optional)</span>
+                        <span style={{ color: 'darkTextSecondary', fontWeight: 400, fontSize: '10px' }}>(optional)</span>
                       </div>
-                      {expandedSections.link ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
+                      {expandedSections.link ? <ChevronUp className="w-3 h-3" style={{ color: 'darkTextSecondary' }} /> : <ChevronDown className="w-3 h-3" style={{ color: 'darkTextSecondary' }} />}
                     </button>
                     <div className="flex items-center gap-2 mb-1.5">
                       <button className="flex-1 flex items-center justify-center gap-1 py-1 rounded border text-xs font-medium transition-all"
@@ -623,25 +740,25 @@ export default function FBPostGenerator() {
                     {expandedSections.link && (
                       <div className="space-y-2 pl-0.5">
                         <div className="space-y-0.5">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Link Title</Label>
+                          <Label className="text-xs" style={{ color: 'darkTextSecondary', fontSize: '10px' }}>Link Title</Label>
                           <Input type="text" placeholder="Page title" value={postData.linkTitle}
                             onChange={(e) => updateField('linkTitle', e.target.value)}
                             className="text-sm h-7" style={fileInputStyle} />
                         </div>
                         <div className="space-y-0.5">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Domain</Label>
+                          <Label className="text-xs" style={{ color: 'darkTextSecondary', fontSize: '10px' }}>Domain</Label>
                           <Input type="text" placeholder="example.com" value={postData.linkDomain}
                             onChange={(e) => updateField('linkDomain', e.target.value)}
                             className="text-sm h-7" style={fileInputStyle} />
                         </div>
                         <div className="space-y-0.5">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Description</Label>
+                          <Label className="text-xs" style={{ color: 'darkTextSecondary', fontSize: '10px' }}>Description</Label>
                           <Textarea placeholder="Link description..." value={postData.linkDescription}
                             onChange={(e) => updateField('linkDescription', e.target.value)}
                             rows={2} className="text-sm resize-none" style={fileInputStyle} />
                         </div>
                         <div className="space-y-0.5">
-                          <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>Link Image</Label>
+                          <Label className="text-xs" style={{ color: 'darkTextSecondary', fontSize: '10px' }}>Link Image</Label>
                           {postData.linkImage ? (
                             <div className="relative rounded overflow-hidden border" style={{ borderColor: '#ccd0d5' }}>
                               <img src={postData.linkImage} alt="" className="w-full max-h-20 object-cover" />
@@ -652,7 +769,7 @@ export default function FBPostGenerator() {
                             </div>
                           ) : (
                             <button className="w-full h-10 border border-dashed rounded flex items-center justify-center gap-1"
-                              style={{ borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#bcc0c4', cursor: 'pointer', fontSize: '10px' }}
+                              style={{ borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: 'darkTextSecondary', cursor: 'pointer', fontSize: '10px' }}
                               onClick={() => linkImageInputRef.current?.click()}>
                               <FileImage className="w-3.5 h-3.5" /> Add link image
                             </button>
@@ -663,18 +780,18 @@ export default function FBPostGenerator() {
                     )}
                   </div>
 
-                  <Separator style={{ backgroundColor: '#eee' }} />
+                  <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Engagement Metrics ─── */}
                   <div className="space-y-2">
-                    <Label className="text-xs font-semibold" style={{ color: '#4b4f56', fontSize: '11px' }}>Engagement Metrics</Label>
+                    <Label className="text-xs font-semibold" style={{ color: 'darkLabelColor', fontSize: '11px' }}>Engagement Metrics</Label>
                     <div className="grid grid-cols-3 gap-2">
                       {[{ field: 'likes' as const, label: 'Likes', icon: Heart },
                         { field: 'comments' as const, label: 'Comments', icon: MessageSquare },
                         { field: 'shares' as const, label: 'Shares', icon: Share2 }
                       ].map(item => (
                         <div key={item.field} className="space-y-0.5">
-                          <Label className="text-xs flex items-center gap-0.5" style={{ color: '#8a8d91', fontSize: '10px' }}>
+                          <Label className="text-xs flex items-center gap-0.5" style={{ color: 'darkTextSecondary', fontSize: '10px' }}>
                             <item.icon className="w-2.5 h-2.5" style={{ color: '#3b5998' }} /> {item.label}
                           </Label>
                           <Input type="number" min={0} value={postData[item.field]}
@@ -684,7 +801,7 @@ export default function FBPostGenerator() {
                       ))}
                     </div>
                     <div className="space-y-0.5">
-                      <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '10px' }}>
+                      <Label className="text-xs" style={{ color: 'darkTextSecondary', fontSize: '10px' }}>
                         Top Liker Name
                       </Label>
                       <Input type="text" placeholder="e.g. Jane Smith" value={postData.topLikerName}
@@ -693,19 +810,19 @@ export default function FBPostGenerator() {
                     </div>
                   </div>
 
-                  <Separator style={{ backgroundColor: '#eee' }} />
+                  <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Comments Section ─── */}
                   <div>
                     <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('comment')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
-                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                         <MessageCircle className="w-3 h-3" /> Comment Preview
-                        <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>
+                        <span style={{ color: 'darkTextSecondary', fontWeight: 400, fontSize: '10px' }}>
                           ({postData.commentsList.length})
                         </span>
                       </div>
-                      {expandedSections.comment ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
+                      {expandedSections.comment ? <ChevronUp className="w-3 h-3" style={{ color: 'darkTextSecondary' }} /> : <ChevronDown className="w-3 h-3" style={{ color: 'darkTextSecondary' }} />}
                     </button>
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <button className="flex-1 flex items-center justify-center gap-1 py-1 rounded border text-xs font-medium transition-all"
@@ -751,13 +868,13 @@ export default function FBPostGenerator() {
                           rows={1} className="text-sm resize-none mb-1.5" style={{ ...fileInputStyle, fontSize: '11px' }} />
                         <div className="flex gap-2">
                           <div className="flex-1">
-                            <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '9px' }}>Timestamp</Label>
+                            <Label className="text-xs" style={{ color: 'darkTextSecondary', fontSize: '9px' }}>Timestamp</Label>
                             <Input type="text" placeholder="2 hrs" value={c.commentTimestamp}
                               onChange={(e) => updateComment(c.id, 'commentTimestamp', e.target.value)}
                               className="text-sm h-6" style={{ ...fileInputStyle, fontSize: '11px' }} />
                           </div>
                           <div className="w-16">
-                            <Label className="text-xs" style={{ color: '#8a8d91', fontSize: '9px' }}>Likes</Label>
+                            <Label className="text-xs" style={{ color: 'darkTextSecondary', fontSize: '9px' }}>Likes</Label>
                             <Input type="number" min={0} value={c.commentLikes}
                               onChange={(e) => updateComment(c.id, 'commentLikes', Math.max(0, parseInt(e.target.value) || 0))}
                               className="text-sm h-6 text-center" style={{ ...fileInputStyle, fontSize: '11px' }} />
@@ -767,16 +884,16 @@ export default function FBPostGenerator() {
                     ))}
                   </div>
 
-                  <Separator style={{ backgroundColor: '#eee' }} />
+                  <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Post Extras ─── */}
                   <div>
                     <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('postExtras')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
-                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                         <Share2 className="w-3 h-3" /> Post Extras
                       </div>
-                      {expandedSections.postExtras ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
+                      {expandedSections.postExtras ? <ChevronUp className="w-3 h-3" style={{ color: 'darkTextSecondary' }} /> : <ChevronDown className="w-3 h-3" style={{ color: 'darkTextSecondary' }} />}
                     </button>
 
                     {expandedSections.postExtras && (
@@ -784,9 +901,9 @@ export default function FBPostGenerator() {
                         {/* Shared By Text */}
                         <div className="space-y-0.5">
                           <Label className="text-xs font-semibold flex items-center gap-1"
-                            style={{ color: '#4b4f56', fontSize: '11px' }}>
+                            style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                             <Share2 className="w-3 h-3" /> Shared By Text
-                            <span style={{ color: '#bcc0c4', fontWeight: 400, fontSize: '10px' }}>("X shared a link")</span>
+                            <span style={{ color: 'darkTextSecondary', fontWeight: 400, fontSize: '10px' }}>("X shared a link")</span>
                           </Label>
                           <Input type="text" placeholder="e.g. Tech Blog"
                             value={postData.sharedByText} onChange={(e) => updateField('sharedByText', e.target.value)}
@@ -796,7 +913,7 @@ export default function FBPostGenerator() {
                         {/* Is Edited */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               Show "Edited" Indicator
                             </span>
                           </div>
@@ -810,7 +927,7 @@ export default function FBPostGenerator() {
                         {/* Engagement Visibility */}
                         <div className="space-y-0.5">
                           <Label className="text-xs font-semibold flex items-center gap-1"
-                            style={{ color: '#4b4f56', fontSize: '11px' }}>
+                            style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                             <ShieldCheck className="w-3 h-3" /> Engagement Visibility
                           </Label>
                           <div className="flex gap-0.5">
@@ -830,7 +947,7 @@ export default function FBPostGenerator() {
                         {/* Comment Sort Order */}
                         <div className="space-y-0.5">
                           <Label className="text-xs font-semibold flex items-center gap-1"
-                            style={{ color: '#4b4f56', fontSize: '11px' }}>
+                            style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                             <ArrowDownNarrowWide className="w-3 h-3" /> Comment Sort Label
                           </Label>
                           <select
@@ -838,7 +955,7 @@ export default function FBPostGenerator() {
                             onChange={(e) => updateField('commentSortOrder', e.target.value as CommentSortOrder)}
                             className="text-xs rounded border px-2 py-1.5 flex-1"
                             style={{
-                              borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#4b4f56',
+                              borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: 'darkLabelColor',
                               fontSize: '11px', height: '28px',
                             }}
                           >
@@ -851,16 +968,16 @@ export default function FBPostGenerator() {
                     )}
                   </div>
 
-                  <Separator style={{ backgroundColor: '#eee' }} />
+                  <Separator style={{ backgroundColor: isDark ? '#3a3a5c' : '#eee' }} />
 
                   {/* ─── Advanced Options ─── */}
                   <div>
                     <button className="w-full flex items-center justify-between py-0.5" onClick={() => toggleSection('advanced')}>
                       <div className="text-xs font-semibold flex items-center gap-1"
-                        style={{ color: '#4b4f56', fontSize: '11px' }}>
+                        style={{ color: 'darkLabelColor', fontSize: '11px' }}>
                         <Monitor className="w-3 h-3" /> Advanced Options
                       </div>
-                      {expandedSections.advanced ? <ChevronUp className="w-3 h-3" style={{ color: '#bcc0c4' }} /> : <ChevronDown className="w-3 h-3" style={{ color: '#bcc0c4' }} />}
+                      {expandedSections.advanced ? <ChevronUp className="w-3 h-3" style={{ color: 'darkTextSecondary' }} /> : <ChevronDown className="w-3 h-3" style={{ color: 'darkTextSecondary' }} />}
                     </button>
 
                     {expandedSections.advanced && (
@@ -869,7 +986,7 @@ export default function FBPostGenerator() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Monitor className="w-3 h-3" style={{ color: '#3b5998' }} />
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               Facebook Nav Bar
                             </span>
                           </div>
@@ -884,7 +1001,7 @@ export default function FBPostGenerator() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Columns3 className="w-3 h-3" style={{ color: '#3b5998' }} />
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               Facebook Sidebars
                             </span>
                           </div>
@@ -899,7 +1016,7 @@ export default function FBPostGenerator() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <UsersRound className="w-3 h-3" style={{ color: '#3b5998' }} />
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               People Also Like
                             </span>
                           </div>
@@ -914,7 +1031,7 @@ export default function FBPostGenerator() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Stamp className="w-3 h-3" style={{ color: '#3b5998' }} />
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               Show Watermark
                             </span>
                           </div>
@@ -929,7 +1046,7 @@ export default function FBPostGenerator() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Hash className="w-3 h-3" style={{ color: '#3b5998' }} />
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               Highlight Hashtags
                             </span>
                           </div>
@@ -944,7 +1061,7 @@ export default function FBPostGenerator() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Scissors className="w-3 h-3" style={{ color: '#3b5998' }} />
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               Truncate Long Posts
                             </span>
                           </div>
@@ -959,7 +1076,7 @@ export default function FBPostGenerator() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
                             <Layers className="w-3 h-3" style={{ color: '#3b5998' }} />
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               More Stories Below
                             </span>
                           </div>
@@ -969,7 +1086,7 @@ export default function FBPostGenerator() {
                             {postData.showMoreStories ? 'On' : 'Off'}
                           </button>
                         </div>
-                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
+                        <p style={{ fontSize: '9px', color: 'darkTextSecondary', paddingLeft: '18px' }}>
                           Shows mini post cards below the main post (like 2014 FB feed)
                         </p>
 
@@ -977,7 +1094,7 @@ export default function FBPostGenerator() {
                         <div>
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-1.5">
-                              <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                                 Post Border Radius
                               </span>
                             </div>
@@ -1009,7 +1126,7 @@ export default function FBPostGenerator() {
                         <div>
                           <div className="flex items-center gap-1.5 mb-1.5">
                             <Palette className="w-3 h-3" style={{ color: '#3b5998' }} />
-                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                            <span style={{ fontSize: '11px', color: 'darkLabelColor', fontWeight: 600 }}>
                               Post Background
                             </span>
                           </div>
@@ -1023,7 +1140,7 @@ export default function FBPostGenerator() {
                                   borderColor: postData.postBackground === bg.value ? '#3b5998' : '#e5e5e5',
                                   backgroundColor: postData.postBackground === bg.value ? '#e7f3ff' : '#fafbfc',
                                   fontSize: '10px',
-                                  color: '#4b4f56',
+                                  color: 'darkLabelColor',
                                 }}
                               >
                                 <span
@@ -1059,7 +1176,7 @@ export default function FBPostGenerator() {
                     <Button
                       className="text-xs gap-1 font-semibold"
                       style={{
-                        backgroundColor: '#ffffff', color: '#4b4f56', fontSize: '10px', height: '32px',
+                        backgroundColor: '#ffffff', color: 'darkLabelColor', fontSize: '10px', height: '32px',
                         borderColor: '#dddfe2',
                       }}
                       onClick={() => handleDownload('png', 2)}
@@ -1070,7 +1187,7 @@ export default function FBPostGenerator() {
                     <Button
                       className="text-xs gap-1 font-semibold"
                       style={{
-                        backgroundColor: '#ffffff', color: '#4b4f56', fontSize: '10px', height: '32px',
+                        backgroundColor: '#ffffff', color: 'darkLabelColor', fontSize: '10px', height: '32px',
                         borderColor: '#dddfe2',
                       }}
                       onClick={() => handleDownload('jpeg', 3)}
@@ -1081,7 +1198,7 @@ export default function FBPostGenerator() {
                     <Button
                       className="text-xs gap-1 font-semibold"
                       style={{
-                        backgroundColor: '#ffffff', color: '#4b4f56', fontSize: '10px', height: '32px',
+                        backgroundColor: '#ffffff', color: 'darkLabelColor', fontSize: '10px', height: '32px',
                         borderColor: '#dddfe2',
                       }}
                       onClick={handleCopyToClipboard}

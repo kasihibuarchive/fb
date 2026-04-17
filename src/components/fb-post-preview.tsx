@@ -197,6 +197,14 @@ export type CommentSortOrder = 'top' | 'newest' | 'all'
 
 export type EngagementVisibility = 'public' | 'friends' | 'custom'
 
+export interface ReplyData {
+  id: string
+  name: string
+  avatar: string
+  text: string
+  timestamp: string
+}
+
 export interface CommentData {
   id: string
   commenterName: string
@@ -204,6 +212,7 @@ export interface CommentData {
   commentText: string
   commentTimestamp: string
   commentLikes: number
+  replies: ReplyData[]
 }
 
 export interface FBPostData {
@@ -212,6 +221,7 @@ export interface FBPostData {
   timestamp: string
   postContent: string
   attachedImage: string
+  attachedImages: string[]
   sharedLink: boolean
   linkTitle: string
   linkDomain: string
@@ -242,6 +252,9 @@ export interface FBPostData {
   isEdited: boolean
   engagementVisibility: EngagementVisibility
   commentSortOrder: CommentSortOrder
+  // v7.0 new fields
+  groupPostName: string
+  groupPostAvatar: string
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -253,6 +266,7 @@ export const defaultComment: CommentData = {
   commentText: 'This looks amazing! Where is this place?',
   commentTimestamp: '2 hrs',
   commentLikes: 3,
+  replies: [],
 }
 
 export const defaultPostData: FBPostData = {
@@ -261,6 +275,7 @@ export const defaultPostData: FBPostData = {
   timestamp: 'October 12, 2014 at 4:30 PM',
   postContent: 'Just had the most amazing coffee at this little café downtown. The latte art was incredible! ☕ Sometimes it\'s the simple things that make your day. #blessed',
   attachedImage: '',
+  attachedImages: [''],
   sharedLink: false,
   linkTitle: '',
   linkDomain: '',
@@ -291,6 +306,9 @@ export const defaultPostData: FBPostData = {
   isEdited: false,
   engagementVisibility: 'public',
   commentSortOrder: 'top',
+  // v7.0 defaults
+  groupPostName: '',
+  groupPostAvatar: '',
 }
 
 export const feelingOptions = [
@@ -347,8 +365,8 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       topLikerName: 'Emily Davis',
       showCommentPreview: true,
       commentsList: [
-        { id: '1', commenterName: 'Alex Turner', commenterAvatar: defaultAvatar, commentText: 'So jealous! I need a morning like that 😭', commentTimestamp: '3 hrs', commentLikes: 5 },
-        { id: '2', commenterName: 'Rachel Kim', commenterAvatar: defaultAvatar, commentText: 'Where is this café?? It looks gorgeous!', commentTimestamp: '2 hrs', commentLikes: 2 },
+        { id: '1', commenterName: 'Alex Turner', commenterAvatar: defaultAvatar, commentText: 'So jealous! I need a morning like that 😭', commentTimestamp: '3 hrs', commentLikes: 5, replies: [] },
+        { id: '2', commenterName: 'Rachel Kim', commenterAvatar: defaultAvatar, commentText: 'Where is this café?? It looks gorgeous!', commentTimestamp: '2 hrs', commentLikes: 2, replies: [] },
       ],
       highlightHashtags: true,
       truncateLongPosts: false,
@@ -370,9 +388,9 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       topLikerName: 'David Wilson',
       showCommentPreview: true,
       commentsList: [
-        { id: '1', commenterName: 'Jessica Brown', commenterAvatar: defaultAvatar, commentText: 'Aww happy birthday to your sister!! 🎉🎉🎉', commentTimestamp: '1 hr', commentLikes: 8 },
-        { id: '2', commenterName: 'Tom Richards', commenterAvatar: defaultAvatar, commentText: 'Happy birthday! Hope she has the best day ever 🥳', commentTimestamp: '45 min', commentLikes: 1 },
-        { id: '3', commenterName: 'Lisa Chen', commenterAvatar: defaultAvatar, commentText: 'Such a sweet post! 🥰', commentTimestamp: '30 min', commentLikes: 3 },
+        { id: '1', commenterName: 'Jessica Brown', commenterAvatar: defaultAvatar, commentText: 'Aww happy birthday to your sister!! 🎉🎉🎉', commentTimestamp: '1 hr', commentLikes: 8, replies: [] },
+        { id: '2', commenterName: 'Tom Richards', commenterAvatar: defaultAvatar, commentText: 'Happy birthday! Hope she has the best day ever 🥳', commentTimestamp: '45 min', commentLikes: 1, replies: [] },
+        { id: '3', commenterName: 'Lisa Chen', commenterAvatar: defaultAvatar, commentText: 'Such a sweet post! 🥰', commentTimestamp: '30 min', commentLikes: 3, replies: [] },
       ],
       taggedFriends: ['Emily Davis', 'Tom Richards'],
     },
@@ -396,8 +414,8 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       topLikerName: 'Gadget Guru',
       showCommentPreview: true,
       commentsList: [
-        { id: '1', commenterName: 'Sam Lee', commenterAvatar: defaultAvatar, commentText: 'The 6 Plus is too big IMO. 6 is perfect!', commentTimestamp: '45 min', commentLikes: 12 },
-        { id: '2', commenterName: 'Nina Patel', commenterAvatar: defaultAvatar, commentText: 'I just pre-ordered the 6 Plus. Can\'t wait! 📱', commentTimestamp: '30 min', commentLikes: 4 },
+        { id: '1', commenterName: 'Sam Lee', commenterAvatar: defaultAvatar, commentText: 'The 6 Plus is too big IMO. 6 is perfect!', commentTimestamp: '45 min', commentLikes: 12, replies: [] },
+        { id: '2', commenterName: 'Nina Patel', commenterAvatar: defaultAvatar, commentText: 'I just pre-ordered the 6 Plus. Can\'t wait! 📱', commentTimestamp: '30 min', commentLikes: 4, replies: [] },
       ],
     },
   },
@@ -415,8 +433,8 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       topLikerName: 'Mom',
       showCommentPreview: true,
       commentsList: [
-        { id: '1', commenterName: 'Linda Johnson', commenterAvatar: defaultAvatar, commentText: 'SO PROUD OF YOU!!! We always knew you could do it! ❤️❤️❤️', commentTimestamp: '30 min', commentLikes: 45 },
-        { id: '2', commenterName: 'Dad', commenterAvatar: defaultAvatar, commentText: 'Well done son! You earned this. 💪', commentTimestamp: '25 min', commentLikes: 22 },
+        { id: '1', commenterName: 'Linda Johnson', commenterAvatar: defaultAvatar, commentText: 'SO PROUD OF YOU!!! We always knew you could do it! ❤️❤️❤️', commentTimestamp: '30 min', commentLikes: 45, replies: [] },
+        { id: '2', commenterName: 'Dad', commenterAvatar: defaultAvatar, commentText: 'Well done son! You earned this. 💪', commentTimestamp: '25 min', commentLikes: 22, replies: [] },
       ],
       highlightHashtags: true,
       feeling: 'feeling accomplished',
@@ -438,9 +456,9 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       showNavBar: true,
       showSidebars: true,
       commentsList: [
-        { id: '1', commenterName: 'Ashley Williams', commenterAvatar: defaultAvatar, commentText: 'HAHAHA I remember this! So funny 😂😂', commentTimestamp: '5 hrs', commentLikes: 34 },
-        { id: '2', commenterName: 'Ryan Martinez', commenterAvatar: defaultAvatar, commentText: 'The outfit though!! 🔥🔥', commentTimestamp: '4 hrs', commentLikes: 19 },
-        { id: '3', commenterName: 'Jessica Nguyen', commenterAvatar: defaultAvatar, commentText: 'We were so young! Miss those days 🥺', commentTimestamp: '3 hrs', commentLikes: 11 },
+        { id: '1', commenterName: 'Ashley Williams', commenterAvatar: defaultAvatar, commentText: 'HAHAHA I remember this! So funny 😂😂', commentTimestamp: '5 hrs', commentLikes: 34, replies: [] },
+        { id: '2', commenterName: 'Ryan Martinez', commenterAvatar: defaultAvatar, commentText: 'The outfit though!! 🔥🔥', commentTimestamp: '4 hrs', commentLikes: 19, replies: [] },
+        { id: '3', commenterName: 'Jessica Nguyen', commenterAvatar: defaultAvatar, commentText: 'We were so young! Miss those days 🥺', commentTimestamp: '3 hrs', commentLikes: 11, replies: [] },
       ],
       highlightHashtags: true,
       truncateLongPosts: false,
@@ -465,8 +483,8 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       showSidebars: true,
       showPeopleAlsoLike: true,
       commentsList: [
-        { id: '1', commenterName: 'David Park', commenterAvatar: defaultAvatar, commentText: 'You got this! I\'ll sponsor you for sure 💪', commentTimestamp: '1 hr', commentLikes: 7 },
-        { id: '2', commenterName: 'Emma Thompson', commenterAvatar: defaultAvatar, commentText: 'That\'s amazing! What charity are you running for?', commentTimestamp: '50 min', commentLikes: 2 },
+        { id: '1', commenterName: 'David Park', commenterAvatar: defaultAvatar, commentText: 'You got this! I\'ll sponsor you for sure 💪', commentTimestamp: '1 hr', commentLikes: 7, replies: [] },
+        { id: '2', commenterName: 'Emma Thompson', commenterAvatar: defaultAvatar, commentText: 'That\'s amazing! What charity are you running for?', commentTimestamp: '50 min', commentLikes: 2, replies: [] },
       ],
       highlightHashtags: true,
       location: 'Central Park, New York',
@@ -491,9 +509,9 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       showSidebars: true,
       showPeopleAlsoLike: true,
       commentsList: [
-        { id: '1', commenterName: 'Jake Thompson', commenterAvatar: defaultAvatar, commentText: 'Wait what?! That\'s insane 😱', commentTimestamp: '2 hrs', commentLikes: 156 },
-        { id: '2', commenterName: 'Samantha Reed', commenterAvatar: defaultAvatar, commentText: 'I walked 10 miles today and I\'m exhausted. Can\'t imagine 5x around the earth lmao', commentTimestamp: '1 hr', commentLikes: 89 },
-        { id: '3', commenterName: 'Mike Anderson', commenterAvatar: defaultAvatar, commentText: 'Shared! My friends need to see this 🔥', commentTimestamp: '45 min', commentLikes: 34 },
+        { id: '1', commenterName: 'Jake Thompson', commenterAvatar: defaultAvatar, commentText: 'Wait what?! That\'s insane 😱', commentTimestamp: '2 hrs', commentLikes: 156, replies: [] },
+        { id: '2', commenterName: 'Samantha Reed', commenterAvatar: defaultAvatar, commentText: 'I walked 10 miles today and I\'m exhausted. Can\'t imagine 5x around the earth lmao', commentTimestamp: '1 hr', commentLikes: 89, replies: [] },
+        { id: '3', commenterName: 'Mike Anderson', commenterAvatar: defaultAvatar, commentText: 'Shared! My friends need to see this 🔥', commentTimestamp: '45 min', commentLikes: 34, replies: [] },
       ],
       highlightHashtags: true,
       showMoreStories: true,
@@ -1411,6 +1429,37 @@ function PostCard({
         : bgColor,
       position: 'relative',
     }}>
+      {/* ─── Group Post Header ─── */}
+      {data.groupPostName && (
+        <div style={{
+          backgroundColor: '#f0f2f5',
+          padding: '8px 12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          borderBottom: '1px solid #dddfe2',
+          fontSize: '12px',
+        }}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: '4px',
+            overflow: 'hidden', border: '1px solid #dddfe2', backgroundColor: '#e9eaed', flexShrink: 0,
+          }}>
+            <img src={data.groupPostAvatar || defaultAvatar} alt="" style={{
+              width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+            }} />
+          </div>
+          <div>
+            <div style={{ fontSize: '12px', color: '#1d2129', fontWeight: 700 }}>
+              {data.groupPostName}
+            </div>
+            <div style={{ fontSize: '10px', color: '#9197a3', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <FriendsIcon size={10} color="#9197a3" />
+              <span>Group · 45K members</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── Shared By Banner ─── */}
       {sharedByText && (
         <div style={{
