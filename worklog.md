@@ -402,3 +402,213 @@ Stage Summary:
 - All new fields backward-compatible with safe defaults
 - 5 new inline SVG icons (total 20+)
 - FBPostData now has 30+ fields
+
+---
+Task ID: 8
+Agent: Fullstack Developer
+Task: v8.0 features — Life Event, Comment Replies, Group Post, Date Picker, Font Customization, Dark Mode fixes
+
+Work Log:
+- Read worklog and all source files to understand v7.0 codebase
+- **Updated `FBPostData` type** with 5 new fields:
+  - `postType: 'default' | 'lifeevent'` (default 'default') — enables Life Event post rendering
+  - `lifeEventCategory: string` (default '') — category for life event (e.g. "Graduated from")
+  - `lifeEventDate: string` (default '') — date shown under life event category
+  - `lifeEventDescription: string` (default '') — detailed description of the life event
+  - `postFontFamily: string` (default 'default') — font family for post content text
+- **Added new exports**: `lifeEventCategoryOptions` (8 categories), `fontFamilyOptions` (6 fonts), `CalendarIcon` SVG
+- **Added `getFontFamily()` helper** — maps font key to CSS font-family string
+- **Major update to `fb-post-preview.tsx`** with new features:
+  1. **Life Event banner** — Blue (#4267B2) banner at top of post card with CalendarIcon, "Life Event" text, category, date, and description. Renders when `postType === 'lifeevent'`. Placed after Group Post header and before Shared By banner.
+  2. **Comment reply threads** — Replies now render under each comment with:
+     - "X replies" link when replies exist
+     - Thin left border (#dddfe2) with indentation
+     - Smaller avatar (24x24, round)
+     - Reply name in blue bold + reply text + timestamp
+  3. **Post font customization** — `getFontFamily()` applied to post content div's `fontFamily` style. Applies to post text only, not nav/sidebars.
+  4. **New "Life Event" preset** — Sarah Mitchell graduation with life event data, feeling accomplished, 342 likes
+  5. **New "Group Discussion" preset** — David Chen ramen question in "Bay Area Foodies" group with 2 comments (one with reply)
+  6. **Updated Birthday preset** — Added 2 replies to Jessica Brown's comment
+- **Major update to `fb-post-generator.tsx`** with editor UI:
+  1. **Life Event editor section** — Collapsible section with:
+     - Enable/disable toggle for life event mode
+     - Category dropdown with 8 presets + Custom option
+     - Event date input
+     - Description input
+  2. **Comment reply editing** — Each comment card in expanded section now has:
+     - Reply thread display (indented, with left border)
+     - "Add Reply" button at bottom of each comment card
+     - Each reply row: name input, text input, timestamp input, delete button
+     - Reply CRUD: addReply(), removeReply(), updateReply() handlers
+  3. **Group Post editor section** — Collapsible section with:
+     - Group Name text input
+     - Group Avatar upload (32x32 preview)
+     - Privacy display: "Group · 45K members"
+  4. **Custom Date Picker** — Calendar icon button next to timestamp input:
+     - Mini inline calendar with month/year selector (prev/next arrows)
+     - Day grid (Su–Sa headers, clickable day cells)
+     - Auto-formats selected date as "Month Day, Year at 12:00 PM"
+     - Separate from the existing timer preset button
+  5. **Font selector dropdown** — In Advanced Options section with 6 font choices
+  6. **Dark mode fixes**:
+     - All dropdowns/popovers now use `darkDropdownBg` variable (#252540 in dark mode) instead of hardcoded white
+     - Emoji picker uses dark background in dark mode
+     - Timestamp presets dropdown uses dark background in dark mode
+     - Hover states use `darkDropdownHover` variable
+     - Fixed `toggleBtnStyle()` to use `darkTextSecondary` variable instead of literal string `'darkTextSecondary'`
+     - Fixed all `'darkLabelColor'` string references to use `darkLabelColor` variable
+  7. **New preview header badges** — "🎓 Life Event", "👥 Group Post", "✏️ Custom Font"
+  8. **Version bump** v7.0 → v8.0
+  9. **New imports**: `Calendar, ChevronLeft, ChevronRight, TypeIcon` from lucide-react; `lifeEventCategoryOptions, fontFamilyOptions` from preview module; `ReplyData` type
+  10. **State additions**: `showDatePicker`, `datePickerMonth`, `datePickerYear`, `customLifeEventCategory`
+  11. **Ref additions**: `groupAvatarInputRef`
+- ESLint: clean (0 errors, 0 warnings)
+- Dev server: compiled successfully, all pages returning 200
+
+Stage Summary:
+- **Version 8.0** — 6 major features + dark mode fixes
+- 6 new features: Life Event post type, Comment reply threads, Group Post editor, Custom date picker, Post font customization, 2 new presets
+- 5 new FBPostData fields, 2 new exported option arrays, 1 new SVG icon
+- ReplyData type now fully functional with full CRUD support in both preview and editor
+- All dropdowns/popovers properly support dark mode
+- Total preset count: 9 (added Life Event, Group Discussion)
+- Birthday preset updated with reply thread data
+
+---
+Task ID: 8-b
+Agent: Styling Expert
+Task: v8.0 styling refinements and polish
+
+Work Log:
+- Read worklog and all source files to understand v8.0 codebase
+- Implemented 10 categories of styling improvements across both files
+
+**Preview (fb-post-preview.tsx) changes:**
+1. **Post Card Hover Animation** — Added `PostCardWrapper` component with fade-in opacity + translateY transition and box-shadow animation on mount (0.4s ease)
+2. **Better "Write a comment" Input** — Added camera icon (SVG) next to comment input; added 3 small icons row below (paperclip, poll chart, smile emoji)
+3. **Improved Post Header Spacing** — Increased padding between header and content (`6px` → `8px`); added bottom padding after shared by banner (`7px 12px 8px`); made "..." dots icon smaller (14px from 16px)
+4. **Better Link Preview Card** — Added `PlayButtonIcon` (triangular SVG play icon) when no link image; added dark gradient overlay on link preview images; improved domain text to uppercase with smaller font (10px); added thin separator line between image and text content
+5. **Sidebar Polish** — Added "See More/See Less" toggle to left sidebar Favourites section (Photos/Friends hidden by default); right sidebar "People You May Know" cards kept hover-ready with transition property
+6. **Notification Badge Pulse Animation** — Added `@keyframes fbBadgePulse` CSS animation on the red notification badge circle (subtle 2s ease-in-out box-shadow pulse)
+7. **Post Card Content** — Improved line-height to `1.42`; added `letterSpacing: '0.01em'`; changed hashtag font-weight from 600 to 700
+8. **Comment Section** — Added subtle gray line separator before first comment; changed Like/Reply buttons to fontWeight 400 (lighter); kept subtle hover background on comment rows
+9. **Engagement Section Polish** — Made reaction emoji circles 20x20 (from 18x18) with -5px overlap; added `letterSpacing: '0.02em'` on action bar buttons; added subtle gradient background (`#f7f8fa → #f0f2f5`) on engagement section
+10. **New SVG icon** — Added `PlayButtonIcon` component (48x48 circular play button with semi-transparent background)
+
+**Editor (fb-post-generator.tsx) changes:**
+1. **Preset buttons** — Added opacity transition (0.9 on hover); added CSS `transition` property for transform, opacity, background-color, border-color (0.15s ease)
+2. **Advanced Options count badge** — Added `enabledAdvancedCount` computed value counting 10 non-default options; renders as a pill badge next to "Advanced Options" text (blue when >0, gray when 0)
+3. **Emoji picker grid spacing** — Changed from `grid-cols-8 gap-0.5` with `w-6 h-6` to `grid-cols-6 gap-1` with `w-7 h-7` for better spacing; added background-color transition on emoji buttons
+4. **Smooth border-color transition** — Added `transition: 'border-color 0.2s ease, box-shadow 0.2s ease'` to all fileInputStyle instances
+
+- ESLint: clean (0 errors, 0 warnings)
+- Screenshot taken: `/home/z/my-project/download/v8-styled.png`
+
+Stage Summary:
+- **Version 8.0-b** — 14 styling refinements across preview and editor
+- Preview polish: mount animation, comment input icons, header spacing, link preview play button + gradient + separator, notification pulse, larger reaction circles, better typography, comment section separator, engagement gradient
+- Editor polish: preset button opacity transition, advanced options count badge, emoji picker grid spacing, input border-color transition
+- All changes are backward-compatible (no new data fields)
+- Total inline SVG icons: 21 (added PlayButtonIcon)
+
+---
+Task ID: 8-c
+Agent: QA & Bug Fix Agent
+Task: Fix critical runtime bug and hydration error
+
+Work Log:
+- QA with agent-browser revealed runtime error: `data is not defined` at fb-post-preview.tsx:1433
+- Root cause: v7.0 added `groupPostName`/`groupPostAvatar` to FBPostData but never wired them through the component chain
+- Fixed in fb-post-preview.tsx:
+  1. Added `groupPostName, groupPostAvatar` to FBPostPreview destructuring (line 1119)
+  2. Added `groupPostName, groupPostAvatar` to PostCard parameter destructuring (line 1374)
+  3. Added `groupPostName: string; groupPostAvatar: string;` to PostCard type definition (lines 1417-1418)
+  4. Changed `data.groupPostName` → `groupPostName`, `data.groupPostAvatar` → `groupPostAvatar` in PostCard body
+  5. Added `groupPostName={groupPostName}` and `groupPostAvatar={groupPostAvatar}` props at both PostCard call sites (sidebar layout + single-column layout)
+- Fixed hydration error in fb-post-generator.tsx:
+  1. Changed `useState(() => { if (typeof window) { ... setDarkMode(true) } })` → `useEffect(() => { ... }, [])` (line 70)
+  2. Changed URL param loader from `useState(() => { ... })` → `useEffect(() => { ... }, [toast])` (line 414)
+  3. Changed `useState(new Date().getMonth())` → `useState(0)` to avoid server/client mismatch (line 65)
+  4. Added `useEffect` to imports
+- ESLint: clean (0 errors)
+- QA with agent-browser: no errors, all 9 presets render, no hydration warnings
+
+Stage Summary:
+- Fixed 2 critical bugs: runtime ReferenceError and hydration mismatch
+- App is fully stable at v8.0 with all features working
+
+---
+## Project Status Assessment (Updated after v8.0)
+
+**Current Status:** ✅ v8.0 — Life Event, Comment Replies, Group Post, Date Picker, Font Customization, Dark Mode Fixes + Styling Polish
+
+**Completed Features (v1.0 through v8.0):**
+
+*Core Post Editing:*
+- Profile picture upload with default avatar fallback
+- User name, timestamp, post content editing
+- Visibility selector (Public / Friends / Only Me) with correct icons
+- Optional attached photo upload with drag-and-drop
+- Engagement metrics (likes, comments, shares) with "Top Liker Name"
+- Shared link preview with title/domain/description/image
+- Tagged Friends — add/remove friends shown as "with Name1, Name2"
+- Location / Check-in — pin icon + location text
+- Feeling / Activity — dropdown with 12 presets + custom
+- Shared By banner — "X shared a link" gray header bar
+- Edited indicator — "· Edited" text next to timestamp
+- Comment sort order — Top/Newest/All Comments label selector
+- Character counter (63,206 limit), Reset all fields
+- **Life Event post type** — blue banner with calendar icon, category dropdown (8 presets), date, description
+- **Post font customization** — 6 font options for post content text
+- **Custom date picker** — mini calendar with month/year navigation
+- **Group Post** — group name, group avatar, "Group · 45K members" indicator
+
+*Comments & Social:*
+- Multiple comments support (add, edit, remove, per-comment likes)
+- **Comment reply threads** — nested replies with CRUD support
+- Emoji picker (24 quick-access emojis)
+- Timestamp presets dropdown: 9 presets
+- **9 quick presets** (Coffee, Birthday, Shared Link, Achievement, Throwback, Full Screenshot, Viral Post, Life Event, Group Discussion)
+
+*Full Page Layout:*
+- Facebook navigation bar (authentic 2014 look)
+- Facebook wordmark + left sidebar (220px) + right sidebar (249px)
+- 3-column layout, Facebook footer, People Also Like, More Stories
+
+*Export & UI:*
+- Multiple export options: PNG 3x, PNG 2x, JPEG 3x, Copy to clipboard
+- Shareable URL encoding post data
+- Dark mode for editor (preview stays 2014-style)
+- Drag-and-drop image uploads
+- Toast notifications, responsive layout
+- Preview header badges: "Full Layout", "Watermark", "2014 Style", "Life Event", "Group Post", "Custom Font"
+
+*Styling (v8.0 refinements):*
+- Post card mount animation (fade-in)
+- Camera icon + attachment icons in "Write a comment" box
+- Link preview play button + dark gradient overlay
+- Notification badge pulse animation
+- Larger reaction emoji circles (20x20)
+- Improved typography (lineHeight 1.42, letterSpacing 0.01em)
+- Comment section gray separator
+- Engagement gradient background
+- Sidebar "See More/See Less" toggle
+- Advanced Options count badge
+- Smooth input transitions
+
+**Technical Details:**
+- FBPostData: 35+ fields
+- 21+ custom inline SVG icons (all html2canvas compatible)
+- ~2100 lines preview component, ~1500 lines generator component
+
+**Potential Improvements for Next Phase:**
+1. Undo/redo for editing
+2. Post templates gallery with visual browsing
+3. Multiple photo albums support
+4. Video post type
+5. Poll post type
+6. Animated GIF support
+7. Saved posts to localStorage/database
+8. Keyboard shortcuts for common actions
+9. Post history / recent edits
+10. Import/export post configurations as JSON
