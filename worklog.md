@@ -162,9 +162,9 @@ Stage Summary:
 ---
 ## Project Status Assessment
 
-**Current Status:** ✅ v3.0 — Feature-complete and stable
+**Current Status:** ✅ v4.0 — Full Facebook page layout support
 
-**Completed Features (v1.0 + v2.0 + v3.0):**
+**Completed Features (v1.0 + v2.0 + v3.0 + v4.0):**
 - Profile picture upload with default avatar fallback
 - User name, timestamp, post content editing
 - Visibility selector (Public / Friends / Only Me) with correct icons
@@ -173,18 +173,26 @@ Stage Summary:
 - Shared link preview with title/domain/description/image
 - **Multiple comments support** (add, edit, remove, per-comment likes)
 - **Facebook navigation bar** in preview (authentic 2014 look with search, nav links, user menu)
+- **Facebook wordmark** "facebook" text next to the "f" logo in nav bar
+- **Facebook left sidebar** (220px): profile card, Favourites nav, Pages/Groups/Apps, Friends Online, Create Ad
+- **Facebook right sidebar** (249px): Sponsored ad, People You May Know (3 contacts with Add Friend), Trending topics
+- **3-column layout**: left sidebar | center feed | right sidebar (when both nav bar + sidebars enabled)
 - **Facebook footer** in screenshot mode
+- **"People Also Like" section**: 3 avatar circles with names + See More link (requires 10+ likes)
+- **Watermark toggle**: "Generated with 2014 FB Post Generator" italic watermark
 - **Hashtag highlighting** in blue
 - **See More / See Less** for long posts
 - **Emoji picker** (24 quick-access emojis)
-- **Advanced Options panel** (nav bar, hashtags, truncate toggles)
-- **6 quick presets** (Coffee, Birthday, Shared Link, Achievement, Throwback, Full Screenshot)
+- **Timestamp presets dropdown**: 9 presets (Just now, 2 min, 15 min, 1 hr, 2 hrs, 5 hrs, Yesterday, 2 days ago, 1 week ago)
+- **Advanced Options panel** (nav bar, sidebars, hashtags, truncate, people also like, watermark toggles)
+- **7 quick presets** (Coffee, Birthday, Shared Link, Achievement, Throwback, Full Screenshot, Viral Post)
 - **Multiple export options**: PNG 3x, PNG 2x, JPEG 3x, Copy to clipboard
 - Character counter (63,206 limit)
 - Reset all fields
 - Collapsible advanced sections with scrollable editor
 - Toast notifications for user feedback
 - Responsive two-panel layout
+- Preview header badges: "Full Layout", "Watermark", "2014 Style"
 
 **Technical Details:**
 - Next.js 16 with App Router
@@ -194,7 +202,7 @@ Stage Summary:
 - Lucide React icons for editor UI
 - Custom inline SVGs for 2014 Facebook icons (html2canvas compatible)
 - CommentData type for multiple comments
-- FBPostData includes: showNavBar, highlightHashtags, truncateLongPosts
+- FBPostData includes: showNavBar, showSidebars, highlightHashtags, truncateLongPosts, showWatermark, showPeopleAlsoLike
 
 ---
 ## Potential Improvements for Next Phase
@@ -209,3 +217,56 @@ Stage Summary:
 8. **Custom background color** for the Facebook page
 9. **Drag-and-drop** image uploads
 10. **Timestamp presets**: "Just now", "2 hrs", "Yesterday", "X minutes ago"
+
+---
+Task ID: 4
+Agent: Fullstack Developer
+Task: Implement v4.0 features — Sidebars, Watermark, People Also Like, Timestamp Presets, Styling Polish
+
+Work Log:
+- Read all source files to understand v3.0 codebase structure
+- **Updated `FBPostData` type** with 3 new fields:
+  - `showSidebars: boolean` (default false) — enables left/right Facebook sidebars
+  - `showWatermark: boolean` (default false) — adds watermark to post card
+  - `showPeopleAlsoLike: boolean` (default false) — shows "People Also Like" section
+- **Major rewrite of `fb-post-preview.tsx`**:
+  - **Extracted `PostCard` component** from `FBPostPreview` for reuse in both single-column and 3-column layouts
+  - **Facebook Left Sidebar** (`FacebookLeftSidebar` component, 220px):
+    - User profile card (40x40 avatar, name in blue, bio text, "Friends · Photos" link)
+    - Favourites navigation (News Feed highlighted, Messages, Events, Photos, Friends)
+    - Pages, Groups, Apps sections with placeholder nav items
+    - Friends Online section with green online dots (3 friends)
+    - "Create Ad" link at bottom
+    - Styled with font-size 12px, #9197a3 uppercase section headers, #e5e5e5 borders
+  - **Facebook Right Sidebar** (`FacebookRightSidebar` component, 249px):
+    - Sponsored section with placeholder ad box
+    - "People You May Know" with 3 contact cards (32x32 avatar, name, mutual friends count, blue "Add Friend" button)
+    - Trending section with 4 trending topics (#IceBucketChallenge, World Cup 2014, NY Fashion Week, Breaking Bad Finale) and post counts
+  - **3-column layout**: When `showNavBar && showSidebars`, renders left sidebar | center feed (flex:1, max-width 500px) | right sidebar using CSS flexbox
+  - **Facebook wordmark**: Added "facebook" text next to the "f" icon in nav bar, styled in white Helvetica Neue Bold Italic (15px)
+  - **"People Also Like" section**: Shows 3 avatar circles (32x32) with names and "See More" link, only when likes > 10 and toggle enabled
+  - **Watermark**: Renders "Generated with 2014 FB Post Generator" in 10px, #999, italic, bottom-right of post card
+  - **Styling polish**:
+    - Subtle gradient on post card background (white to #fcfcfd)
+    - "Write a comment..." placeholder color changed from #bcc0c4 to #9197a3 (more visible)
+    - Thin separator lines between posts and sidebar content
+  - **Type safety fix**: Added `!!` coercion for `hasContent` and `shouldTruncate` to avoid `string | boolean` type errors
+  - **New "Viral Post" preset**: High engagement (5234 likes, 892 comments, 1247 shares), sidebars + people also like enabled, 3 comments
+  - **Updated existing presets**: Full Screenshot now has `showSidebars: true, showPeopleAlsoLike: true`; Throwback now has `showSidebars: true`
+- **Updated `fb-post-generator.tsx`**:
+  - **Timestamp presets dropdown**: Clock icon button next to timestamp input opens a popover with 9 presets (Just now, 2 min, 15 min, 1 hr, 2 hrs, 5 hrs, Yesterday, 2 days ago, 1 week ago)
+  - **3 new Advanced Options toggles**:
+    - Facebook Sidebars (with Columns3 icon, requires Nav Bar)
+    - People Also Like (with UsersRound icon, requires 10+ likes)
+    - Show Watermark (with Stamp icon)
+  - **Preview header badges**: "Full Layout" badge when sidebars enabled, "Watermark" badge when watermark enabled
+  - **Version bump**: v3.0 → v4.0
+  - **New imports**: Timer, Columns3, UsersRound, Stamp from lucide-react
+- ESLint: clean (0 errors)
+- TypeScript: clean (0 errors in project files)
+
+Stage Summary:
+- **Version 4.0** — Full Facebook page layout support
+- 8 new features: Left sidebar, Right sidebar, Facebook wordmark, People Also Like section, Watermark toggle, Timestamp presets dropdown, Viral Post preset, Styling polish
+- Post preview can now produce **complete Facebook page screenshots** with authentic 3-column layout
+- Total preset count: 7 (added Viral Post)

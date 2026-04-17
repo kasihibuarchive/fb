@@ -12,11 +12,23 @@ import {
   ImagePlus, Download, User, Clock, Type, Heart, MessageSquare, Share2,
   X, Upload, Globe, Users, Lock, RotateCcw, Copy, ImageIcon, Link, MessageCircle,
   Sparkles, ChevronDown, ChevronUp, ExternalLink, FileImage, Monitor, Smartphone,
-  Plus, Trash2, Hash, Scissors
+  Plus, Trash2, Hash, Scissors, Timer, Droplets, Columns3, UsersRound, Stamp
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 const quickEmojis = ['😀','😂','😍','🥰','😎','🤔','😢','😡','👍','👎','❤️','🔥','🎉','💯','✨','🙏','💪','👀','🙏','😂','😍','🥺','🤣','😭']
+
+const timestampPresets = [
+  { label: 'Just now', value: 'Just now' },
+  { label: '2 min', value: '2 minutes ago' },
+  { label: '15 min', value: '15 minutes ago' },
+  { label: '1 hr', value: 'About an hour ago' },
+  { label: '2 hrs', value: '2 hours ago' },
+  { label: '5 hrs', value: '5 hours ago' },
+  { label: 'Yesterday', value: 'Yesterday at 9:30 PM' },
+  { label: '2 days ago', value: '2 days ago at 3:15 PM' },
+  { label: '1 week ago', value: '1 week ago at 11:00 AM' },
+]
 
 export default function FBPostGenerator() {
   const previewRef = useRef<HTMLDivElement>(null)
@@ -33,6 +45,7 @@ export default function FBPostGenerator() {
     advanced: false,
   })
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showTimestampPresets, setShowTimestampPresets] = useState(false)
   const { toast } = useToast()
 
   const updateField = useCallback(<K extends keyof FBPostData>(field: K, value: FBPostData[K]) => {
@@ -53,6 +66,7 @@ export default function FBPostGenerator() {
     setPostData(defaultPostData)
     setExpandedSections({ link: false, comment: false, advanced: false })
     setShowEmojiPicker(false)
+    setShowTimestampPresets(false)
     if (profileInputRef.current) profileInputRef.current.value = ''
     if (imageInputRef.current) imageInputRef.current.value = ''
     if (linkImageInputRef.current) linkImageInputRef.current.value = ''
@@ -128,6 +142,12 @@ export default function FBPostGenerator() {
       c.id === id ? { ...c, [field]: value } : c
     ))
   }, [postData.commentsList, updateField])
+
+  // ── Timestamp preset ──
+  const applyTimestampPreset = useCallback((value: string) => {
+    updateField('timestamp', value)
+    setShowTimestampPresets(false)
+  }, [updateField])
 
   // ── Downloads ──
   const handleDownload = useCallback(async (format: 'png' | 'jpeg', scale: number) => {
@@ -224,7 +244,7 @@ export default function FBPostGenerator() {
           <div className="flex items-center gap-2">
             <span className="hidden sm:inline-flex text-xs px-2 py-0.5 rounded font-medium"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.8)' }}>
-              v3.0
+              v4.0
             </span>
           </div>
         </div>
@@ -336,9 +356,44 @@ export default function FBPostGenerator() {
                         style={{ color: '#4b4f56', fontSize: '11px' }}>
                         <Clock className="w-3 h-3" /> Timestamp
                       </Label>
-                      <Input type="text" placeholder="Oct 12, 2014"
-                        value={postData.timestamp} onChange={(e) => updateField('timestamp', e.target.value)}
-                        className="text-sm h-8" style={fileInputStyle} />
+                      <div className="flex gap-1">
+                        <Input type="text" placeholder="Oct 12, 2014"
+                          value={postData.timestamp} onChange={(e) => updateField('timestamp', e.target.value)}
+                          className="text-sm h-8 flex-1" style={fileInputStyle} />
+                        <div className="relative">
+                          <button
+                            type="button"
+                            className="flex items-center justify-center rounded border transition-all"
+                            style={{
+                              width: '30px', height: '30px', flexShrink: 0,
+                              borderColor: '#ccd0d5', backgroundColor: '#fafbfc', color: '#8a8d91',
+                            }}
+                            onClick={() => setShowTimestampPresets(!showTimestampPresets)}
+                          >
+                            <Timer className="w-3 h-3" />
+                          </button>
+                          {showTimestampPresets && (
+                            <div className="absolute right-0 top-full mt-1 z-50 border rounded-lg shadow-lg overflow-hidden"
+                              style={{ backgroundColor: '#fff', borderColor: '#dddfe2', width: '160px' }}>
+                              {timestampPresets.map((preset) => (
+                                <button
+                                  key={preset.label}
+                                  className="w-full text-left px-3 py-1.5 text-xs transition-colors"
+                                  style={{
+                                    color: '#4b4f56', fontSize: '11px',
+                                    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                                  }}
+                                  onClick={() => applyTimestampPreset(preset.value)}
+                                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff' }}
+                                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                                >
+                                  {preset.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs font-semibold" style={{ color: '#4b4f56', fontSize: '11px' }}>Visibility</Label>
@@ -636,6 +691,71 @@ export default function FBPostGenerator() {
                           Adds the classic Facebook blue navigation bar at the top of the screenshot
                         </p>
 
+                        {/* Show Sidebars */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Columns3 className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              Facebook Sidebars
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={{
+                              borderColor: postData.showSidebars ? '#3b5998' : '#e5e5e5',
+                              backgroundColor: postData.showSidebars ? '#e7f3ff' : '#fafbfc',
+                              color: postData.showSidebars ? '#3b5998' : '#8a8d91', fontSize: '10px',
+                            }} onClick={() => updateField('showSidebars', !postData.showSidebars)}>
+                            {postData.showSidebars ? 'On' : 'Off'}
+                          </button>
+                        </div>
+                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
+                          Adds left &amp; right sidebars (requires Nav Bar). Authentic 2014 layout with sidebar content
+                        </p>
+
+                        {/* People Also Like */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <UsersRound className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              People Also Like
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={{
+                              borderColor: postData.showPeopleAlsoLike ? '#3b5998' : '#e5e5e5',
+                              backgroundColor: postData.showPeopleAlsoLike ? '#e7f3ff' : '#fafbfc',
+                              color: postData.showPeopleAlsoLike ? '#3b5998' : '#8a8d91', fontSize: '10px',
+                            }} onClick={() => updateField('showPeopleAlsoLike', !postData.showPeopleAlsoLike)}>
+                            {postData.showPeopleAlsoLike ? 'On' : 'Off'}
+                          </button>
+                        </div>
+                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
+                          Shows a &quot;People Also Like&quot; section below the post (requires 10+ likes)
+                        </p>
+
+                        {/* Show Watermark */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Stamp className="w-3 h-3" style={{ color: '#3b5998' }} />
+                            <span style={{ fontSize: '11px', color: '#4b4f56', fontWeight: 600 }}>
+                              Show Watermark
+                            </span>
+                          </div>
+                          <button className="flex items-center gap-1 px-2 py-1 rounded border text-xs font-medium transition-all"
+                            style={{
+                              borderColor: postData.showWatermark ? '#3b5998' : '#e5e5e5',
+                              backgroundColor: postData.showWatermark ? '#e7f3ff' : '#fafbfc',
+                              color: postData.showWatermark ? '#3b5998' : '#8a8d91', fontSize: '10px',
+                            }} onClick={() => updateField('showWatermark', !postData.showWatermark)}>
+                            {postData.showWatermark ? 'On' : 'Off'}
+                          </button>
+                        </div>
+                        <p style={{ fontSize: '9px', color: '#bcc0c4', paddingLeft: '18px' }}>
+                          Adds a subtle watermark at the bottom of the post card
+                        </p>
+
+                        <div style={{ borderTop: '1px solid #eee', margin: '4px 0' }} />
+
                         {/* Highlight Hashtags */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
@@ -698,10 +818,22 @@ export default function FBPostGenerator() {
                       Live Preview
                     </CardTitle>
                     <div className="flex items-center gap-1.5">
-                      {postData.showNavBar && (
+                      {postData.showNavBar && postData.showSidebars && (
+                        <span className="text-xs px-1.5 py-0.5 rounded font-medium"
+                          style={{ backgroundColor: '#2d4373', color: '#fff', fontSize: '9px' }}>
+                          <Columns3 className="w-2.5 h-2.5 inline mr-0.5" />Full Layout
+                        </span>
+                      )}
+                      {postData.showNavBar && !postData.showSidebars && (
                         <span className="text-xs px-1.5 py-0.5 rounded font-medium"
                           style={{ backgroundColor: '#3b5998', color: '#fff', fontSize: '9px' }}>
                           <Monitor className="w-2.5 h-2.5 inline mr-0.5" />Full Screenshot
+                        </span>
+                      )}
+                      {postData.showWatermark && (
+                        <span className="text-xs px-1.5 py-0.5 rounded font-medium"
+                          style={{ backgroundColor: '#f0f2f5', color: '#4b4f56', fontSize: '9px' }}>
+                          <Stamp className="w-2.5 h-2.5 inline mr-0.5" />Watermark
                         </span>
                       )}
                       <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
