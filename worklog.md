@@ -1,6 +1,35 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
+## Project Status Assessment (Updated after v13.1)
+
+**Current Status:** ✅ v13.1 — Export bug fix (critical)
+
+**Critical Bug Fix:** PNG/JPG export was completely broken. Root cause: html2canvas v1.4.1 cannot parse Tailwind CSS 4's `lab()`/`oklch()` color functions, throwing "Attempting to parse an unsupported color function" error. Fixed by replacing html2canvas with `html-to-image` library (v1.11.13) which handles modern CSS color functions correctly.
+
+**Other Fixes:**
+- Fixed React warning: `borderColor` (shorthand) conflicting with `borderLeft` (longhand) on Editor Card — changed to use individual `borderTop/Right/Bottom` longhand properties
+- Added error recovery: styles are restored even when html2canvas throws
+- Added empty canvas/dataUrl validation before download
+- Better error messages showing actual error text in toast
+
+**Changes:**
+- Replaced `import html2canvas from 'html2canvas'` with `import { toPng, toJpeg } from 'html-to-image'`
+- Rewrote `handleDownload` to use `toPng`/`toJpeg` with `pixelRatio` parameter
+- Rewrote `handleCopyToClipboard` to use `toPng` + fetch blob conversion
+- Added `html-to-image@1.11.13` to dependencies
+
+**QA Verified:**
+- ✅ PNG 3x export works (no errors)
+- ✅ PNG 2x export works
+- ✅ JPEG 3x export works
+- ✅ Copy to clipboard works
+- ✅ 9:16 ratio + PNG export works
+- ✅ ESLint: clean (0 errors)
+- ✅ Dev server: compiles successfully
+- ✅ Zero console errors
+
+---
 ## Project Status Assessment (Updated after v13.0)
 
 **Current Status:** ✅ v13.0 — Aspect ratio exports + new features + styling polish

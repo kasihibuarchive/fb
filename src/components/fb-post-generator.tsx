@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { toPng, toJpeg } from 'html-to-image'
 import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, type MilestoneIconType, type PostBgPattern, type PostBorderStyle, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions, milestoneIconOptions, postBgPatternOptions, postBorderStyleOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -452,50 +453,70 @@ export default function FBPostGenerator() {
     if (!previewRef.current || isDownloading) return
     setIsDownloading(true)
     try {
-      const html2canvas = (await import('html2canvas')).default
-
-      // Temporarily remove overflow constraints for clean capture
       const el = previewRef.current
-      const originalOverflow = el.style.overflow
-      const originalOverflowY = el.style.overflowY
-      const originalMaxHeight = el.style.maxHeight
-      const originalAspectRatio = el.style.aspectRatio
 
-      let captureEl = el
-
-      if (exportRatio !== 'original') {
-        el.style.overflow = 'visible'
-        el.style.overflowY = 'visible'
-        el.style.maxHeight = 'none'
+      // Temporarily remove overflow/ratio/gradient for clean capture
+      const origStyles = {
+        overflow: el.style.overflow,
+        overflowY: el.style.overflowY,
+        maxHeight: el.style.maxHeight,
+        aspectRatio: el.style.aspectRatio,
+        backgroundImage: el.style.backgroundImage,
+        backgroundOrigin: el.style.backgroundOrigin,
+        backgroundClip: el.style.backgroundClip,
+        border: el.style.border,
       }
 
-      const canvas = await html2canvas(captureEl, {
-        scale,
-        useCORS: true,
-        allowTaint: true,
+      el.style.overflow = 'visible'
+      el.style.overflowY = 'visible'
+      el.style.maxHeight = 'none'
+      el.style.aspectRatio = 'none'
+      el.style.backgroundImage = 'none'
+      el.style.backgroundOrigin = ''
+      el.style.backgroundClip = ''
+      el.style.border = '1px solid #dddfe2'
+
+      const ratioSuffix = exportRatio !== 'original' ? `-${exportRatio.replace(':', 'x')}` : ''
+
+      const options = {
+        quality: 0.95,
+        pixelRatio: scale,
         backgroundColor: exportBgColor || '#e9eaed',
-        logging: false,
-      })
+        style: {
+          transform: 'none',
+        },
+      }
+
+      const dataUrl = format === 'jpeg'
+        ? await toJpeg(el, options)
+        : await toPng(el, options)
 
       // Restore styles
-      el.style.overflow = originalOverflow
-      el.style.overflowY = originalOverflowY
-      el.style.maxHeight = originalMaxHeight
-      el.style.aspectRatio = originalAspectRatio
+      Object.assign(el.style, origStyles)
 
-      const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
+      if (!dataUrl) {
+        toast({ title: 'Export Failed', description: 'Generated empty image. Try again.', variant: 'destructive' })
+        return
+      }
+
       const ext = format === 'jpeg' ? 'jpg' : 'png'
-      const ratioSuffix = exportRatio !== 'original' ? `-${exportRatio.replace(':', 'x')}` : ''
       const link = document.createElement('a')
       link.download = `fb-post${ratioSuffix}-${Date.now()}.${ext}`
-      link.href = canvas.toDataURL(mimeType, 0.95)
+      link.href = dataUrl
+      link.style.display = 'none'
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
+      setTimeout(() => { document.body.removeChild(link) }, 200)
+
       toast({ title: 'Downloaded!', description: `${ext.toUpperCase()} at ${scale}x${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
     } catch (err) {
       console.error('Download failed:', err)
-      toast({ title: 'Export Failed', description: 'Could not generate image. Try again.', variant: 'destructive' })
+      toast({ title: 'Export Failed', description: `Error: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      // Try to restore styles even on error
+      try {
+        const el = previewRef.current
+        if (el) el.style.aspectRatio = ''
+      } catch { /* ignore */ }
     } finally {
       setIsDownloading(false)
     }
@@ -504,50 +525,49 @@ export default function FBPostGenerator() {
   const handleCopyToClipboard = useCallback(async () => {
     if (!previewRef.current) return
     try {
-      const html2canvas = (await import('html2canvas')).default
-
-      // Temporarily remove overflow constraints for clean capture
       const el = previewRef.current
-      const originalOverflow = el.style.overflow
-      const originalOverflowY = el.style.overflowY
-      const originalMaxHeight = el.style.maxHeight
-      const originalAspectRatio = el.style.aspectRatio
 
-      let captureEl = el
-
-      if (exportRatio !== 'original') {
-        el.style.overflow = 'visible'
-        el.style.overflowY = 'visible'
-        el.style.maxHeight = 'none'
+      const origStyles = {
+        overflow: el.style.overflow,
+        overflowY: el.style.overflowY,
+        maxHeight: el.style.maxHeight,
+        aspectRatio: el.style.aspectRatio,
+        backgroundImage: el.style.backgroundImage,
+        backgroundOrigin: el.style.backgroundOrigin,
+        backgroundClip: el.style.backgroundClip,
+        border: el.style.border,
       }
 
-      const canvas = await html2canvas(captureEl, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
+      el.style.overflow = 'visible'
+      el.style.overflowY = 'visible'
+      el.style.maxHeight = 'none'
+      el.style.aspectRatio = 'none'
+      el.style.backgroundImage = 'none'
+      el.style.backgroundOrigin = ''
+      el.style.backgroundClip = ''
+      el.style.border = '1px solid #dddfe2'
+
+      const dataUrl = await toPng(el, {
+        quality: 0.95,
+        pixelRatio: 2,
         backgroundColor: exportBgColor || '#e9eaed',
-        logging: false,
+        style: { transform: 'none' },
       })
 
-      // Restore styles
-      el.style.overflow = originalOverflow
-      el.style.overflowY = originalOverflowY
-      el.style.maxHeight = originalMaxHeight
-      el.style.aspectRatio = originalAspectRatio
+      Object.assign(el.style, origStyles)
 
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-            toast({ title: 'Copied!', description: `Image copied to clipboard.${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
-          } catch {
-            toast({ title: 'Not supported', description: 'Clipboard API unavailable.', variant: 'destructive' })
-          }
-        }
-      })
-    } catch (err) {
-      console.error('Download failed:', err)
-      toast({ title: 'Export Failed', description: 'Could not generate image. Try again.', variant: 'destructive' })
+      if (!dataUrl) {
+        toast({ title: 'Export Failed', description: 'Generated empty image.', variant: 'destructive' })
+        return
+      }
+
+      // Convert dataURL to blob for clipboard
+      const res = await fetch(dataUrl)
+      const blob = await res.blob()
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      toast({ title: 'Copied!', description: `Image copied to clipboard.${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
+    } catch {
+      toast({ title: 'Not supported', description: 'Clipboard API unavailable.', variant: 'destructive' })
     }
   }, [toast, exportRatio, exportBgColor])
 
@@ -902,7 +922,7 @@ export default function FBPostGenerator() {
               </Card>
 
               {/* ─── Editor ─── */}
-              <Card className="border" style={{ borderColor: darkCardBorder, backgroundColor: darkCard, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', borderLeft: '3px solid #3b5998' }}>
+              <Card className="shadow-sm" style={{ borderTop: '1px solid ' + darkCardBorder, borderRight: '1px solid ' + darkCardBorder, borderBottom: '1px solid ' + darkCardBorder, borderLeft: '3px solid #3b5998', backgroundColor: darkCard, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
                 <CardHeader className="pb-3 pt-3 px-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-xs font-bold flex items-center gap-1.5"

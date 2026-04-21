@@ -299,6 +299,10 @@ export type MilestoneIconType = 'trophy' | 'star' | 'heart' | 'flag'
 export type PostBgPattern = 'none' | 'dots' | 'lines' | 'diagonal' | 'gradient1' | 'gradient2'
 // v13.0 new types
 export type PostBorderStyle = 'solid' | 'dashed' | 'dotted' | 'none' | 'shadow'
+// v14.0 new types
+export type AuthorRole = 'none' | 'admin' | 'moderator' | 'verified' | 'topfan'
+export type ShareDisplayStyle = 'text' | 'icon' | 'both'
+export type TimestampStyle = 'relative' | 'absolute' | 'full'
 
 export interface ReplyData {
   id: string
@@ -388,6 +392,12 @@ export interface FBPostData {
   showActionEmoji: boolean
   // v13.0 new fields
   postBorderStyle: PostBorderStyle
+  // v14.0 new fields
+  authorRole: AuthorRole
+  shareDisplayStyle: ShareDisplayStyle
+  customShareText: string
+  timestampStyle: TimestampStyle
+  taggedFriendsColor: string
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -472,6 +482,12 @@ export const defaultPostData: FBPostData = {
   showActionEmoji: false,
   // v13.0 defaults
   postBorderStyle: 'solid',
+  // v14.0 defaults
+  authorRole: 'none',
+  shareDisplayStyle: 'both',
+  customShareText: '',
+  timestampStyle: 'relative',
+  taggedFriendsColor: '',
 }
 
 export const feelingOptions = [
@@ -554,6 +570,27 @@ export const postBorderStyleOptions: { value: PostBorderStyle; label: string; ic
   { value: 'dotted', label: 'Dotted', icon: '┈' },
   { value: 'none', label: 'No Border', icon: '𐄂' },
   { value: 'shadow', label: 'Shadow Only', icon: '荣' },
+]
+
+// v14.0 new option constants
+export const authorRoleOptions: { value: AuthorRole; label: string; icon: string; color: string }[] = [
+  { value: 'none', label: 'None', icon: '—', color: '#9197a3' },
+  { value: 'admin', label: 'Admin', icon: '🛡', color: '#3b5998' },
+  { value: 'moderator', label: 'Mod', icon: '⚙', color: '#43a047' },
+  { value: 'verified', label: 'Verified', icon: '✓', color: '#3b5998' },
+  { value: 'topfan', label: 'Top Fan', icon: '⭐', color: '#f57c00' },
+]
+
+export const shareDisplayStyleOptions: { value: ShareDisplayStyle; label: string; icon: string }[] = [
+  { value: 'text', label: 'Text', icon: 'Aa' },
+  { value: 'icon', label: 'Icon', icon: '↗' },
+  { value: 'both', label: 'Both', icon: 'Aa↗' },
+]
+
+export const timestampStyleOptions: { value: TimestampStyle; label: string; desc: string }[] = [
+  { value: 'relative', label: 'Relative', desc: '2 hours ago' },
+  { value: 'absolute', label: 'Absolute', desc: 'Oct 12, 2014' },
+  { value: 'full', label: 'Full', desc: 'Sun, Oct 12...' },
 ]
 
 const moreStoriesData = [
