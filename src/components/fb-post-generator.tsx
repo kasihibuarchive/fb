@@ -1,7 +1,85 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { toPng, toJpeg } from 'html-to-image'
+// Custom DOM-to-image export using SVG foreignObject + Canvas
+// This approach is more reliable than third-party libraries (html-to-image, html2canvas)
+// which can hang on complex DOM trees or modern CSS features.
+
+/** Convert all <img> tags in a DOM tree to inline base64 data URIs */
+async function inlineImages(root: HTMLElement): Promise<void> {
+  const images = root.querySelectorAll('img')
+  await Promise.all(Array.from(images).map(async (img) => {
+    const src = img.getAttribute('src')
+    if (!src || src.startsWith('data:')) return
+    try {
+      const resp = await fetch(src, { mode: 'cors' })
+      const blob = await resp.blob()
+      const reader = new FileReader()
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+      img.setAttribute('src', dataUrl)
+    } catch {
+      // If fetch fails (CORS), leave original src — image may not render but won't crash
+    }
+  }))
+}
+
+function nodeToSvgString(node: HTMLElement, width: number, height: number, bgColor: string): string {
+  const clone = node.cloneNode(true) as HTMLElement
+  const serializer = new XMLSerializer()
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+  <rect width="100%" height="100%" fill="${bgColor}"/>
+  <foreignObject width="100%" height="100%" xmlns="http://www.w3.org/1999/xhtml">
+    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:visible;">
+      ${serializer.serializeToString(clone)}
+    </div>
+  </foreignObject>
+</svg>`
+  return svgStr
+}
+
+async function captureElement(el: HTMLElement, scale: number, bgColor: string, format: 'png' | 'jpeg'): Promise<string> {
+  const width = el.scrollWidth
+  const height = el.scrollHeight
+  if (width === 0 || height === 0) throw new Error('Element has zero dimensions')
+
+  // Clone and inline images so they render correctly inside blob: SVG
+  const clone = el.cloneNode(true) as HTMLElement
+  await inlineImages(clone)
+
+  const svgString = nodeToSvgString(clone, width, height, bgColor)
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+  const url = URL.createObjectURL(svgBlob)
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image()
+      const timeout = setTimeout(() => reject(new Error('Image load timeout (10s)')), 10000)
+      image.onload = () => { clearTimeout(timeout); resolve(image) }
+      image.onerror = () => { clearTimeout(timeout); reject(new Error('Failed to load SVG image')) }
+      image.src = url
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width * scale
+    canvas.height = height * scale
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas context unavailable')
+
+    ctx.fillStyle = bgColor
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.scale(scale, scale)
+    ctx.drawImage(img, 0, 0)
+
+    const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
+    return canvas.toDataURL(mimeType, 0.95)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
 import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, type MilestoneIconType, type PostBgPattern, type PostBorderStyle, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions, milestoneIconOptions, postBgPatternOptions, postBorderStyleOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -55,6 +133,7 @@ export default function FBPostGenerator() {
 
   const [postData, setPostData] = useState<FBPostData>(defaultPostData)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [exportStatus, setExportStatus] = useState<string>('')
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     link: false,
     comment: false,
@@ -451,43 +530,37 @@ export default function FBPostGenerator() {
   // ── Downloads ──
   const handleDownload = useCallback(async (format: 'png' | 'jpeg', scale: number) => {
     if (!previewRef.current || isDownloading) return
+    const el = previewRef.current
     setIsDownloading(true)
+    setExportStatus('Generating image...')
+
+    // Save original inline styles that we'll modify
+    const savedStyles: Record<string, string> = {}
+    const styleKeys = ['overflow', 'maxHeight', 'aspectRatio', 'width', 'maxWidth', 'margin']
+    styleKeys.forEach(k => { savedStyles[k] = el.style[k] })
+
     try {
-      const el = previewRef.current
-
-      // Save original inline styles that we'll modify
-      const savedStyles: Record<string, string> = {}
-      const styleKeys = ['overflow', 'maxHeight', 'aspectRatio', 'width', 'maxWidth', 'margin']
-      styleKeys.forEach(k => { savedStyles[k] = el.style[k] })
-
       // Remove constraints for clean capture — capture full content
       el.style.overflow = 'visible'
       el.style.maxHeight = 'none'
       el.style.aspectRatio = 'none'
 
       const ratioSuffix = exportRatio !== 'original' ? `-${exportRatio.replace(':', 'x')}` : ''
+      const bgColor = exportBgColor || '#e9eaed'
 
-      const options = {
-        quality: 0.95,
-        pixelRatio: scale,
-        backgroundColor: exportBgColor || '#e9eaed',
-        style: {
-          transform: 'none',
-        },
-      }
-
-      const dataUrl = format === 'jpeg'
-        ? await toJpeg(el, options)
-        : await toPng(el, options)
+      setExportStatus('Rendering...')
+      const dataUrl = await captureElement(el, scale, bgColor, format)
 
       // Restore original styles
       styleKeys.forEach(k => { el.style[k] = savedStyles[k] })
 
       if (!dataUrl) {
+        setExportStatus('❌ Export failed: empty image')
         toast({ title: 'Export Failed', description: 'Generated empty image. Try again.', variant: 'destructive' })
         return
       }
 
+      setExportStatus('Downloading...')
       const ext = format === 'jpeg' ? 'jpg' : 'png'
       const link = document.createElement('a')
       link.download = `fb-post${ratioSuffix}-${Date.now()}.${ext}`
@@ -497,10 +570,18 @@ export default function FBPostGenerator() {
       link.click()
       setTimeout(() => { document.body.removeChild(link) }, 200)
 
-      toast({ title: 'Downloaded!', description: `${ext.toUpperCase()} at ${scale}x${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
+      const label = `${ext.toUpperCase()} ${scale}x${exportRatio !== 'original' ? ` (${exportRatio})` : ''}`
+      setExportStatus(`✅ Downloaded ${label}!`)
+      toast({ title: 'Downloaded!', description: label })
+      setTimeout(() => setExportStatus(''), 3000)
     } catch (err) {
       console.error('Download failed:', err)
-      toast({ title: 'Export Failed', description: `Error: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
+      // Restore styles even on error
+      styleKeys.forEach(k => { el.style[k] = savedStyles[k] })
+      const msg = err instanceof Error ? err.message : String(err)
+      setExportStatus(`❌ Export failed: ${msg}`)
+      toast({ title: 'Export Failed', description: `Error: ${msg}`, variant: 'destructive' })
+      setTimeout(() => setExportStatus(''), 5000)
     } finally {
       setIsDownloading(false)
     }
@@ -508,27 +589,25 @@ export default function FBPostGenerator() {
 
   const handleCopyToClipboard = useCallback(async () => {
     if (!previewRef.current) return
+    const el = previewRef.current
+    setIsDownloading(true)
+    setExportStatus('Copying to clipboard...')
+    const savedStyles: Record<string, string> = {}
+    const styleKeys = ['overflow', 'maxHeight', 'aspectRatio', 'width', 'maxWidth', 'margin']
+    styleKeys.forEach(k => { savedStyles[k] = el.style[k] })
+
     try {
-      const el = previewRef.current
-
-      const savedStyles: Record<string, string> = {}
-      const styleKeys = ['overflow', 'maxHeight', 'aspectRatio', 'width', 'maxWidth', 'margin']
-      styleKeys.forEach(k => { savedStyles[k] = el.style[k] })
-
       el.style.overflow = 'visible'
       el.style.maxHeight = 'none'
       el.style.aspectRatio = 'none'
 
-      const dataUrl = await toPng(el, {
-        quality: 0.95,
-        pixelRatio: 2,
-        backgroundColor: exportBgColor || '#e9eaed',
-        style: { transform: 'none' },
-      })
+      const bgColor = exportBgColor || '#e9eaed'
+      const dataUrl = await captureElement(el, 2, bgColor, 'png')
 
       styleKeys.forEach(k => { el.style[k] = savedStyles[k] })
 
       if (!dataUrl) {
+        setExportStatus('❌ Copy failed: empty image')
         toast({ title: 'Export Failed', description: 'Generated empty image.', variant: 'destructive' })
         return
       }
@@ -536,9 +615,18 @@ export default function FBPostGenerator() {
       const res = await fetch(dataUrl)
       const blob = await res.blob()
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      setExportStatus('✅ Copied to clipboard!')
       toast({ title: 'Copied!', description: `Image copied to clipboard.${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
-    } catch {
+      setTimeout(() => setExportStatus(''), 3000)
+    } catch (err) {
+      console.error('Copy failed:', err)
+      styleKeys.forEach(k => { el.style[k] = savedStyles[k] })
+      const msg = err instanceof Error ? err.message : String(err)
+      setExportStatus('❌ Clipboard unavailable')
       toast({ title: 'Not supported', description: 'Clipboard API unavailable.', variant: 'destructive' })
+      setTimeout(() => setExportStatus(''), 3000)
+    } finally {
+      setIsDownloading(false)
     }
   }, [toast, exportRatio, exportBgColor])
 
@@ -798,7 +886,7 @@ export default function FBPostGenerator() {
                 padding: '2px 8px',
                 color: 'rgba(255,255,255,0.8)',
               }}>
-              v13.0
+              v14.0
             </span>
           </div>
         </div>
@@ -2450,10 +2538,15 @@ export default function FBPostGenerator() {
                     </Button>
                   </div>
                   {isDownloading && (
-                    <div className="flex items-center justify-center gap-2 text-xs" style={{ color: '#9197a3' }}>
+                    <div className="flex items-center justify-center gap-2 text-xs" style={{ color: '#3b5998' }}>
                       <div className="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin"
                         style={{ borderColor: '#3b5998 transparent transparent transparent' }} />
-                      Generating...
+                      {exportStatus}
+                    </div>
+                  )}
+                  {!isDownloading && exportStatus && (
+                    <div className="flex items-center justify-center text-xs font-medium" style={{ color: exportStatus.startsWith('✅') ? '#137333' : '#c62828' }}>
+                      {exportStatus}
                     </div>
                   )}
                 </CardContent>
