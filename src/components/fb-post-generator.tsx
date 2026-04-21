@@ -123,6 +123,7 @@ interface SavedPost {
 
 export default function FBPostGenerator() {
   const previewRef = useRef<HTMLDivElement>(null)
+  const editorScrollRef = useRef<HTMLDivElement>(null)
   const profileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const linkImageInputRef = useRef<HTMLInputElement>(null)
@@ -134,6 +135,7 @@ export default function FBPostGenerator() {
   const [postData, setPostData] = useState<FBPostData>(defaultPostData)
   const [isDownloading, setIsDownloading] = useState(false)
   const [exportStatus, setExportStatus] = useState<string>('')
+  const [exportThumbnail, setExportThumbnail] = useState<string | null>(null)
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     link: false,
     comment: false,
@@ -232,6 +234,9 @@ export default function FBPostGenerator() {
       savedPosts: false, milestone: false,
     })
     toast({ title: 'Preset applied!', description: 'Post template loaded successfully.' })
+    if (editorScrollRef.current) {
+      editorScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }, [toast])
 
   const resetAll = useCallback(() => {
@@ -572,6 +577,8 @@ export default function FBPostGenerator() {
 
       const label = `${ext.toUpperCase()} ${scale}x${exportRatio !== 'original' ? ` (${exportRatio})` : ''}`
       setExportStatus(`✅ Downloaded ${label}!`)
+      setExportThumbnail(dataUrl)
+      setTimeout(() => setExportThumbnail(null), 10000)
       toast({ title: 'Downloaded!', description: label })
       setTimeout(() => setExportStatus(''), 3000)
     } catch (err) {
@@ -885,8 +892,10 @@ export default function FBPostGenerator() {
                 borderRadius: '10px',
                 padding: '2px 8px',
                 color: 'rgba(255,255,255,0.8)',
+                textShadow: '0 0 6px rgba(66,103,178,0.4)',
+                animation: 'versionGlow 2s ease-in-out infinite',
               }}>
-              v14.0
+              v15.0
             </span>
           </div>
         </div>
@@ -897,7 +906,7 @@ export default function FBPostGenerator() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
           {/* ═══ Left Panel ═══ */}
           <div className="lg:col-span-5 xl:col-span-4">
-            <div className="custom-scrollbar lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:sticky lg:top-16 space-y-4 pr-1" style={{ scrollbarWidth: 'thin' }}>
+            <div ref={editorScrollRef} className="custom-scrollbar lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:sticky lg:top-16 space-y-4 pr-1" style={{ scrollbarWidth: 'thin' }}>
 
               {/* ─── Saved Posts ─── */}
               {savedPosts.length > 0 && (
@@ -958,24 +967,32 @@ export default function FBPostGenerator() {
                 </CardHeader>
                 <CardContent className="px-4 pb-3">
                   <div className="grid grid-cols-3 gap-1.5">
-                    {presets.map((preset, i) => (
+                    {presets.map((preset, i) => {
+                      const isActive = postData.userName === preset.data.userName
+                      return (
                       <button key={i} onClick={() => applyPreset(preset.data)}
                         className="text-center text-xs font-medium px-2 py-1.5 rounded border"
                         style={{
-                          borderColor: darkCardBorder, backgroundColor: darkInputBg, color: darkText,
+                          borderLeft: isActive ? '3px solid #3b5998' : undefined,
+                          borderRight: '1px solid ' + (isActive ? '#3b5998' : darkCardBorder),
+                          borderTop: '1px solid ' + (isActive ? '#3b5998' : darkCardBorder),
+                          borderBottom: '1px solid ' + (isActive ? '#3b5998' : darkCardBorder),
+                          backgroundColor: isActive ? '#e7f3ff' : darkInputBg,
+                          color: darkText,
                           fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", fontSize: '10px',
                           transform: 'scale(1)', opacity: 1,
                           transition: 'transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
                         }}
-                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#3b5998'; e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,89,152,0.12)' }}
-                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = darkInputBg; e.currentTarget.style.borderColor = darkCardBorder; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none' }}
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderRightColor = '#3b5998'; e.currentTarget.style.borderTopColor = '#3b5998'; e.currentTarget.style.borderBottomColor = '#3b5998'; e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(59,89,152,0.12)' }}
+                        onMouseOut={(e) => { const c = isActive ? '#3b5998' : darkCardBorder; e.currentTarget.style.backgroundColor = isActive ? '#e7f3ff' : darkInputBg; e.currentTarget.style.borderRightColor = c; e.currentTarget.style.borderTopColor = c; e.currentTarget.style.borderBottomColor = c; e.currentTarget.style.borderLeft = isActive ? '3px solid #3b5998' : undefined; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = isActive ? '0 1px 3px rgba(59,89,152,0.08)' : 'none'; }}
                         onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)' }}
                         onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.02)' }}
                       >
                         <span className="block mb-0.5" style={{ fontSize: '16px' }}>{preset.emoji}</span>
                         {preset.name}
                       </button>
-                    ))}
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -1022,7 +1039,7 @@ export default function FBPostGenerator() {
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, 'profile')}
                       >
-                        {dragOverZone === 'profile' && <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(59,89,152,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '3px' }}><Upload className="w-4 h-4" style={{ color: '#3b5998' }} /></div>}
+                        {dragOverZone === 'profile' && <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(59,89,152,0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '3px', border: '2px dashed #3b5998', gap: '2px' }}><Upload className="w-4 h-4" style={{ color: '#3b5998' }} /><span style={{ fontSize: '8px', color: '#3b5998', fontWeight: 600 }}>Drop here</span></div>}
                         <img src={postData.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex gap-1 flex-1">
@@ -1326,14 +1343,14 @@ export default function FBPostGenerator() {
                       </div>
                     )}
                     {validImages.length === 0 && (
-                      <button className="w-full h-16 border border-dashed rounded flex flex-col items-center justify-center gap-0.5 transition-colors"
-                        style={{ borderColor: dragOverZone === 'photo' ? '#3b5998' : darkInputBorder, backgroundColor: dragOverZone === 'photo' ? '#e7f3ff' : darkInputBg, color: darkTextSecondary, cursor: 'pointer', transition: 'all 0.2s' }}
+                      <button className="w-full h-16 border rounded flex flex-col items-center justify-center gap-0.5 transition-colors"
+                        style={{ borderColor: dragOverZone === 'photo' ? '#3b5998' : darkInputBorder, backgroundColor: dragOverZone === 'photo' ? '#e7f3ff' : darkInputBg, color: darkTextSecondary, cursor: 'pointer', transition: 'all 0.2s', borderStyle: dragOverZone === 'photo' ? 'dashed' : 'dashed', borderWidth: dragOverZone === 'photo' ? '2px' : '1px' }}
                         onClick={() => multiImageInputRef.current?.click()}
                         onDragOver={(e) => handleDragOver(e, 'photo')}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, 'photo')}
                         onMouseOver={(e) => { if (dragOverZone !== 'photo') { e.currentTarget.style.backgroundColor = '#e7f3ff'; e.currentTarget.style.borderColor = '#a8c7fa' } }}
-                        onMouseOut={(e) => { if (dragOverZone !== 'photo') { e.currentTarget.style.backgroundColor = darkInputBg; e.currentTarget.style.borderColor = darkInputBorder } }}>
+                        onMouseOut={(e) => { if (dragOverZone !== 'photo') { e.currentTarget.style.backgroundColor = darkInputBg; e.currentTarget.style.borderColor = darkInputBorder; e.currentTarget.style.borderWidth = '1px' } }}>
                         {dragOverZone === 'photo' ? <><Upload className="w-4 h-4 mb-0.5" style={{ color: '#3b5998' }} /><span style={{ fontSize: '10px', color: '#3b5998', fontWeight: 600 }}>Drop image here</span></> : <><ImagePlus className="w-4 h-4" /><span style={{ fontSize: '10px' }}>Click or drag to add (max 6)</span></>}
                       </button>
                     )}
@@ -2498,6 +2515,7 @@ export default function FBPostGenerator() {
                       style={{
                         background: 'linear-gradient(135deg, #4267B2, #3b5998)', color: '#fff', fontSize: '10px', height: '34px',
                         borderColor: '#3b5998', boxShadow: '0 2px 8px rgba(59,89,152,0.25)',
+                        opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer',
                       }}
                       onClick={() => handleDownload('png', 3)}
                       disabled={isDownloading}
@@ -2509,6 +2527,7 @@ export default function FBPostGenerator() {
                       style={{
                         backgroundColor: darkCard, color: darkLabelColor, fontSize: '10px', height: '34px',
                         borderColor: darkCardBorder,
+                        opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer',
                       }}
                       onClick={() => handleDownload('png', 2)}
                       disabled={isDownloading}
@@ -2520,6 +2539,7 @@ export default function FBPostGenerator() {
                       style={{
                         backgroundColor: darkCard, color: darkLabelColor, fontSize: '10px', height: '34px',
                         borderColor: darkCardBorder,
+                        opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer',
                       }}
                       onClick={() => handleDownload('jpeg', 3)}
                       disabled={isDownloading}
@@ -2531,8 +2551,10 @@ export default function FBPostGenerator() {
                       style={{
                         backgroundColor: darkCard, color: darkLabelColor, fontSize: '10px', height: '34px',
                         borderColor: darkCardBorder,
+                        opacity: isDownloading ? 0.6 : 1, cursor: isDownloading ? 'not-allowed' : 'pointer',
                       }}
                       onClick={handleCopyToClipboard}
+                      disabled={isDownloading}
                     >
                       📋 Copy Image
                     </Button>
@@ -2547,6 +2569,12 @@ export default function FBPostGenerator() {
                   {!isDownloading && exportStatus && (
                     <div className="flex items-center justify-center text-xs font-medium" style={{ color: exportStatus.startsWith('✅') ? '#137333' : '#c62828' }}>
                       {exportStatus}
+                    </div>
+                  )}
+                  {exportThumbnail && !isDownloading && (
+                    <div className="flex items-center gap-2 mt-1 justify-center">
+                      <img src={exportThumbnail} alt="Export preview" style={{ maxHeight: '120px', borderRadius: '6px', border: '1px solid #dddfe2', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', objectFit: 'cover' }} />
+                      <span className="text-xs" style={{ color: '#65676b', fontSize: '10px' }}>New export</span>
                     </div>
                   )}
                 </CardContent>
@@ -2741,6 +2769,10 @@ export default function FBPostGenerator() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: ${isDark ? '#4a4a6c' : '#a0a0a0'};
+        }
+        @keyframes versionGlow {
+          0%, 100% { text-shadow: 0 0 6px rgba(66,103,178,0.3); }
+          50% { text-shadow: 0 0 12px rgba(66,103,178,0.6), 0 0 4px rgba(66,103,178,0.3); }
         }
       `}</style>
     </div>

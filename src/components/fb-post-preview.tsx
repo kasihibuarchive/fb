@@ -1055,6 +1055,64 @@ export const presets: { name: string; emoji: string; data: FBPostData }[] = [
       ],
     },
   },
+  {
+    name: 'Work Anniversary',
+    emoji: '💼',
+    data: {
+      ...defaultPostData,
+      userName: 'Sarah Mitchell',
+      timestamp: 'October 15, 2014 at 9:00 AM',
+      postContent: '5 years at Google! 🎉 What an incredible journey it\'s been. From my first day as a junior engineer to leading a team of 12, every challenge has been worth it. Grateful for the amazing colleagues who\'ve become lifelong friends. Here\'s to the next chapter! #WorkAnniversary #Google #Grateful',
+      likes: 847,
+      comments: 62,
+      shares: 23,
+      topLikerName: 'Mark Zuckerberg',
+      showCommentPreview: true,
+      feeling: 'is feeling proud and grateful',
+      showVerifiedBadge: true,
+      highlightHashtags: true,
+      postBgPattern: 'gradient1',
+      showReactionBar: true,
+      reactionType: 'love',
+      showNavBar: true,
+      showSidebars: true,
+      showMoreStories: true,
+      commentsList: [
+        { id: '1', commenterName: 'James Wilson', commenterAvatar: defaultAvatar, commentText: 'Congratulations Sarah! You\'re an inspiration to all of us. Here\'s to many more years! 🎉', commentTimestamp: '2 hrs', commentLikes: 34, replies: [
+          { id: 'r1', name: 'Sarah Mitchell', avatar: defaultAvatar, text: 'Thank you so much James! Means the world coming from you ❤️', timestamp: '1 hr' },
+          { id: 'r2', name: 'Emily Chen', avatar: defaultAvatar, text: 'Absolute legend! So well deserved 🥳', timestamp: '45 min' },
+        ] },
+        { id: '2', commenterName: 'David Park', commenterAvatar: defaultAvatar, commentText: 'I still remember your first day! Look at you now! So proud of everything you\'ve accomplished 💪', commentTimestamp: '1 hr', commentLikes: 18, replies: [] },
+      ],
+    },
+  },
+  {
+    name: 'Movie Review',
+    emoji: '🎬',
+    data: {
+      ...defaultPostData,
+      userName: 'David Chen',
+      timestamp: 'November 8, 2014 at 11:30 PM',
+      postContent: 'Just watched Interstellar and I\'m still processing. Christopher Nolan has outdone himself. The visuals are breathtaking, Hans Zimmer\'s score is hauntingly beautiful, and that docking scene... pure cinema magic. This is what happens when you respect your audience. 10/10 would watch again. And again. And again.',
+      likes: 1243,
+      comments: 89,
+      shares: 156,
+      topLikerName: 'Film Critic',
+      showCommentPreview: true,
+      textStyle: 'italic',
+      postTextColor: '#1a1a2e',
+      showActionEmoji: true,
+      reactionType: 'wow',
+      showNavBar: true,
+      showSidebars: true,
+      showMoreStories: true,
+      commentsList: [
+        { id: '1', commenterName: 'Maria Santos', commenterAvatar: defaultAvatar, commentText: 'That docking scene had me holding my breath the entire time. Masterpiece of a film! 🎬', commentTimestamp: '1 hr', commentLikes: 45, replies: [
+          { id: 'r1', name: 'David Chen', avatar: defaultAvatar, text: 'RIGHT?! The sound design alone deserves an Oscar 🏆', timestamp: '30 min' },
+        ] },
+      ],
+    },
+  },
 ]
 
 // ──────────── Helpers ────────────
@@ -1767,6 +1825,9 @@ function FacebookRightSidebar() {
             </div>
           </div>
         ))}
+        <div style={{ fontSize: '11px', color: '#3b5998', fontWeight: 600, cursor: 'pointer', padding: '2px 10px 0 10px' }}>
+          More
+        </div>
       </div>
     </div>
   )
@@ -2400,6 +2461,7 @@ function PostCard({
           ? 'linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%)'
           : bgColor,
         position: 'relative',
+        transition: 'border-color 0.2s ease',
       }}>
         {/* ─── Background Pattern Overlay ─── */}
         {postBgPattern !== 'none' && (
@@ -3121,7 +3183,7 @@ function PostCard({
                       <span style={{ fontSize: '11px', fontWeight: 400, color: '#3b5998', cursor: 'pointer' }}>
                         Reply
                       </span>
-                      <span style={{ fontSize: '11px', color: '#9197a3' }}>
+                      <span style={{ fontSize: '11px', color: '#5f636a' }}>
                         {comment.commentTimestamp}
                       </span>
                       {comment.commentLikes > 0 && (

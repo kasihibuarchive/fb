@@ -1,6 +1,46 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
+## Project Status Assessment (Updated after v15.0)
+
+**Current Status:** ✅ v15.0 — New features + styling polish + 2 new presets + bug fix
+
+**v15.0 New Features:**
+1. **Drag-and-Drop Image Upload**: Enhanced visual overlays for both profile picture and photo upload areas — dashed borders (2px dashed #3b5998), blue highlight background (#e7f3ff), "Drop image here" / "Drop here" text, Upload icon during dragover. Photo zone border width changes from 1px → 2px dashed on drag.
+2. **2 New Presets** (total now 20): "Work Anniversary" (💼) and "Movie Review" (🎬) with full engagement data, comments with reply threads, verified badges, background patterns, reaction types, and full Facebook layout.
+3. **Editor Scroll-to-Top on Preset Change**: Added `editorScrollRef` to the editor scroll container; when any preset is applied, smoothly scrolls to top via `scrollTo({ top: 0, behavior: 'smooth' })`.
+4. **Export Preview Thumbnail**: After successful PNG download, shows a small thumbnail preview (max-height 120px, rounded corners, subtle shadow) with "New export" label below export buttons. Auto-hides after 10 seconds.
+
+**v15.0 Styling Improvements:**
+1. **Preset buttons active state**: Active preset shows 3px solid #3b5998 left border accent, #e7f3ff background, and persistent subtle shadow on mouse out.
+2. **Export buttons disabled state**: When `isDownloading` is true, all 4 export buttons have opacity 0.6 and cursor not-allowed.
+3. **Version badge glow animation**: Subtle pulse animation (2s ease-in-out infinite) with pulsing text-shadow on the v15.0 badge.
+4. **Comment timestamp color**: Changed from #9197a3 to #5f636a for better readability.
+5. **Post card border hover transition**: Added `transition: border-color 0.2s ease` to PostCard main wrapper div.
+6. **"More" link in trending**: Added "More" link below trending topics in left sidebar with cursor:pointer and #3b5998 color.
+
+**Bug Fix:**
+- Fixed React `borderColor`/`borderLeft` longhand conflict warning on preset buttons — changed from shorthand `borderColor` to individual `borderTop`/`borderRight`/`borderBottom` longhand properties; updated `onMouseOver`/`onMouseOut` handlers to use `borderRightColor`/`borderTopColor`/`borderBottomColor` (20 instances eliminated).
+
+**QA Verified:**
+- ✅ All 20 presets load correctly without errors
+- ✅ Dark mode toggle works
+- ✅ Aspect ratio switching works (Original, 1:1, 4:5, 9:16)
+- ✅ Zero React warnings (borderColor/borderLeft fix verified)
+- ✅ Zero console errors
+- ✅ ESLint: clean (0 errors)
+- ✅ Dev server: compiles successfully
+- ✅ Version badge shows v15.0
+
+**Potential Improvements for Next Phase:**
+1. Post templates gallery with visual browsing grid
+2. Undo/redo editing history
+3. Additional post types: Event, Fundraiser, Album
+4. Watermark removal option
+5. Multi-post collage generator
+6. Comment translation mock feature
+
+---
 ## Project Status Assessment (Updated after v14.0)
 
 **Current Status:** ✅ v14.0 — Critical export fix + improved UX
