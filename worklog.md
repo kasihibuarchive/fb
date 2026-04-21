@@ -1,6 +1,125 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
+## Project Status Assessment (Updated after v13.0)
+
+**Current Status:** ✅ v13.0 — Aspect ratio exports + new features + styling polish
+
+**Bug Fix:** Fixed PNG/JPG download failure. Root cause: `previewRef` pointed to inner FBPostPreview instead of the wrapper div. Also improved download reliability with `document.body.appendChild/link.click/removeChild` pattern and temporary overflow removal during html2canvas capture.
+
+**Completed Features (v13.0):**
+- Export aspect ratios: Original, 1:1 Square, 4:5 Portrait, 9:16 Story
+- Export background color: FB Gray, White, Dark, Custom color picker
+- Post border style: Solid, Dashed, Dotted, None, Shadow
+- Emoji reaction bar hover animation
+- Gradient border on preview wrapper when ratio is active
+- Ratio selector buttons hover effects
+- Preview header badges with smooth transitions
+- Post card shadow enhancement
+- Footer link hover styling
+
+**All Previous Features (v1.0–v12.0):**
+- 46+ editable post fields
+- 18 quick presets
+- Full Facebook page layout (nav bar, left/right sidebars, footer)
+- Photo grid layouts (auto, 2x2, 2x3)
+- 6 reaction types, emoji reaction bar, action emoji row
+- Milestone/achievement banner (4 icon types)
+- 6 background patterns
+- Post text styling, verified badge, pinned/sponsored/badges
+- Comment system with replies, emoji picker
+- Dark mode, custom scrollbar
+- Save/Load/Export/Import JSON, shareable URL
+- Multiple export options (PNG/JPEG/Clipboard)
+
+**Potential Improvements for Next Phase:**
+1. Drag-and-drop image upload
+2. Post templates gallery with visual browsing grid
+3. Undo/redo editing history
+4. Animated GIF support in posts
+5. Additional post types: Event, Fundraiser, Album
+6. Notification simulation (live updating counts)
+
+---
+Task ID: 17
+Agent: Styling & Features Agent
+Task: v13.0-b — Styling improvements + new features
+
+Work Log:
+- Read worklog and all source files to understand v13.0 codebase (~3200 + ~2600 lines)
+- **fb-post-preview.tsx changes:**
+  - Added `PostBorderStyle` type: `'solid' | 'dashed' | 'dotted' | 'none' | 'shadow'`
+  - Exported `postBorderStyleOptions` constant (5 options with icons)
+  - Added `postBorderStyle` to `FBPostData` interface and `defaultPostData` (default `'solid'`)
+  - Wired `postBorderStyle` through `FBPostPreview` destructuring and both `PostCard` call sites
+  - Added `postBorderStyle` to `PostCard` props interface
+  - Applied border style to PostCard's main wrapper div: solid (default), dashed, dotted, none (no border), shadow (heavy shadow instead of border)
+  - **Post card shadow enhancement (Styling B5):** Changed boxShadow from `'0 1px 2px rgba(0,0,0,0.1), 0 0 3px rgba(0,0,0,0.04)'` to `'0 1px 2px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.08)'`; shadow style uses `'0 4px 16px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.1)'`
+  - **Emoji React Animation (Feature A3):** Enhanced reaction bar emoji circles with improved transition (`0.2s cubic-bezier(0.4, 0, 0.2, 1)`), `onMouseOver` scales to 1.2/1.25 with subtle bg color change, `onMouseOut` restores state
+- **fb-post-generator.tsx changes:**
+  - Added `PostBorderStyle` and `postBorderStyleOptions` to imports
+  - Added `exportBgColor` state (default `'#e9eaed'`), `customExportBgColor` state, `postBorderStyle` state (default `'solid'`)
+  - **Export Background Color (Feature A1):** Added selector in Export section below ratio selector with 3 preset buttons (FB Gray, White, Dark) + custom color picker; applied `exportBgColor` to preview wrapper backgroundColor; updated both `handleDownload` and `handleCopyToClipboard` to use `exportBgColor || '#e9eaed'`
+  - **Post Border Style (Feature A2):** Added dropdown in Post Extras section using `postBorderStyleOptions`; wired through applyPreset, loadSavedPost, resetAll, saveCurrentPost, and FBPostPreview data prop
+  - **Preview wrapper gradient border (Styling B1):** When `exportRatio !== 'original'`, applies `border: 2px solid transparent` with `backgroundImage: linear-gradient(white, white), linear-gradient(135deg, #3b5998, #e74c3c, #f39c12)` gradient border effect
+  - **Export ratio buttons hover effect (Styling B2):** Added `cursor: pointer`, `transition: all 0.2s ease`, `onMouseEnter`/`onMouseLeave` handlers for scale(1.05) + boxShadow on hover
+  - **Version badge update (Styling B3):** Changed from `v12.0` to `v13.0`
+  - **Preview header badge improvements (Styling B4):** Updated all badge styles from `transition: all 0.2s ease` to `transition: all 0.3s ease`, added `padding: 3px 10px` for more padding
+  - **Footer link styling (Styling B6):** Added Privacy, Terms, Cookies links with `cursor: pointer`, `transition: color 0.2s`, hover color changes to `#3b5998`
+  - Added `postBorderStyle` badge in preview header (shows when not 'solid')
+- ESLint: clean (0 errors, 0 warnings)
+- Dev server: compiled successfully
+
+Stage Summary:
+- **Version 13.0-b** — 3 new features + 6 styling improvements
+- 3 new features: Export Background Color (3 presets + custom picker), Post Border Style (5 options: solid/dashed/dotted/none/shadow), Emoji React Animation (hover scale effect)
+- 6 styling improvements: Preview gradient border for aspect ratio, ratio buttons hover effect, version badge v13.0, preview badge padding/transition, post card shadow enhancement, footer link hover effects
+- FBPostData now has `postBorderStyle` field (46+ fields total)
+- All changes backward-compatible (new fields default to original behavior)
+
+---
+Task ID: 16
+Agent: Main Developer
+Task: v13.0 — Aspect ratio support (9:16, 1:1, 4:5) + download fix
+
+Work Log:
+- Read worklog and all source files to understand v12.0 codebase (~3200 + ~2450 lines)
+- **Added `exportRatio` state**: `'original' | '1:1' | '4:5' | '9:16'` with default `'original'`
+- **Added `exportRatioOptions` constant**: 4 options with emoji icons (📐⬜📱📲), labels, and descriptions
+- **Fixed `handleDownload` function** (PNG/JPG download bug):
+  - Moved `ref={previewRef}` from FBPostPreview to the wrapper div (captures the entire frame, not just inner content)
+  - Temporarily removes overflow/maxHeight constraints before html2canvas capture for clean export
+  - Restores original styles after capture
+  - Uses `document.body.appendChild(link)` / `link.click()` / `document.body.removeChild(link)` pattern for reliable download triggering
+  - Includes aspect ratio suffix in filename (e.g., `fb-post-1x1-*.png`)
+  - Better error toast messages
+- **Fixed `handleCopyToClipboard` similarly**: same overflow/style workaround for clean clipboard capture
+- **Added Aspect Ratio selector UI** in Export section:
+  - "Export Ratio" label with Maximize2 icon
+  - 4-column grid of ratio buttons with emoji + label
+  - Active state: blue background (#e7f3ff), blue border (#3b5998), box-shadow
+  - Dark mode support with appropriate colors
+  - Separator between ratio selector and export buttons
+- **Added ratio badge** in preview header: shows "📐 {ratio}" badge (pink) when non-original ratio selected
+- **Updated `resetAll` function** to reset `exportRatio` to `'original'`
+- **Modified preview wrapper** div:
+  - `ref={previewRef}` now on wrapper div (not FBPostPreview)
+  - Added `position: relative`, `width: 100%`
+  - When `exportRatio !== 'original'`: applies CSS `aspectRatio` (1/1, 4/5, or 9/16), `maxHeight: 80vh`, `overflowY: auto` for scrollable preview
+- No changes to `fb-post-preview.tsx`
+- ESLint: clean (0 errors)
+- Dev server: compiled successfully
+
+Stage Summary:
+- **Version 13.0** — Export aspect ratio support + download bug fix
+- 4 aspect ratio options: Original (auto height), 1:1 Square, 4:5 Portrait, 9:16 Story
+- Fixed PNG/JPG download failure: ref moved to wrapper div, overflow constraints temporarily removed during capture
+- Aspect ratio selector UI with 4-button grid in Export card
+- Preview header badge shows active ratio
+- Ratio is included in export filenames
+- All changes in `fb-post-generator.tsx` only (no preview changes)
+
+---
 Task ID: 15
 Agent: WebDevReview Cron Agent (Round 5)
 Task: v12.0 — New features, styling polish, new presets

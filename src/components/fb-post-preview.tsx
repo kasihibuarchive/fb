@@ -297,6 +297,8 @@ export type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry'
 // v12.0 new types
 export type MilestoneIconType = 'trophy' | 'star' | 'heart' | 'flag'
 export type PostBgPattern = 'none' | 'dots' | 'lines' | 'diagonal' | 'gradient1' | 'gradient2'
+// v13.0 new types
+export type PostBorderStyle = 'solid' | 'dashed' | 'dotted' | 'none' | 'shadow'
 
 export interface ReplyData {
   id: string
@@ -384,6 +386,8 @@ export interface FBPostData {
   milestoneIcon: MilestoneIconType
   postBgPattern: PostBgPattern
   showActionEmoji: boolean
+  // v13.0 new fields
+  postBorderStyle: PostBorderStyle
 }
 
 const defaultAvatar = '/fb-default-avatar.svg'
@@ -466,6 +470,8 @@ export const defaultPostData: FBPostData = {
   milestoneIcon: 'trophy',
   postBgPattern: 'none',
   showActionEmoji: false,
+  // v13.0 defaults
+  postBorderStyle: 'solid',
 }
 
 export const feelingOptions = [
@@ -539,6 +545,15 @@ export const postBgPatternOptions: { value: PostBgPattern; label: string; previe
   { value: 'diagonal', label: 'Diagonal', preview: '🔷' },
   { value: 'gradient1', label: 'Warm Gradient', preview: '🌅' },
   { value: 'gradient2', label: 'Cool Gradient', preview: '🌊' },
+]
+
+// v13.0 border style options
+export const postBorderStyleOptions: { value: PostBorderStyle; label: string; icon: string }[] = [
+  { value: 'solid', label: 'Solid', icon: '━' },
+  { value: 'dashed', label: 'Dashed', icon: '╌' },
+  { value: 'dotted', label: 'Dotted', icon: '┈' },
+  { value: 'none', label: 'No Border', icon: '𐄂' },
+  { value: 'shadow', label: 'Shadow Only', icon: '荣' },
 ]
 
 const moreStoriesData = [
@@ -1744,6 +1759,8 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
       reactionType, postTextColor, imageGridLayout, showVerifiedBadge,
       // v12.0 new fields
       showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji,
+      // v13.0 new fields
+      postBorderStyle,
     } = data
 
     const hasEngagement = likes > 0 || comments > 0 || shares > 0
@@ -1820,6 +1837,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                   isPinned={isPinned} sponsoredBy={sponsoredBy} customBadgeText={customBadgeText}
                   reactionType={reactionType} postTextColor={postTextColor} imageGridLayout={imageGridLayout} showVerifiedBadge={showVerifiedBadge}
                   showReactionBar={showReactionBar} showMilestone={showMilestone} milestoneText={milestoneText} milestoneIcon={milestoneIcon} postBgPattern={postBgPattern} showActionEmoji={showActionEmoji}
+                  postBorderStyle={postBorderStyle}
                 />
                 {showMoreStories && <MoreStoriesSection />}
                 <FacebookFooter />
@@ -1860,6 +1878,7 @@ export const FBPostPreview = forwardRef<HTMLDivElement, FBPostPreviewProps>(
                 isPinned={isPinned} sponsoredBy={sponsoredBy} customBadgeText={customBadgeText}
                 reactionType={reactionType} postTextColor={postTextColor} imageGridLayout={imageGridLayout} showVerifiedBadge={showVerifiedBadge}
                 showReactionBar={showReactionBar} showMilestone={showMilestone} milestoneText={milestoneText} milestoneIcon={milestoneIcon} postBgPattern={postBgPattern} showActionEmoji={showActionEmoji}
+                postBorderStyle={postBorderStyle}
               />
             </div>
             {showNavBar && showMoreStories && <MoreStoriesSection />}
@@ -2236,6 +2255,8 @@ function PostCard({
   reactionType, postTextColor, imageGridLayout, showVerifiedBadge,
   // v12.0 new fields
   showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji,
+  // v13.0 new fields
+  postBorderStyle,
 }: {
   profilePicture: string
   userName: string
@@ -2304,6 +2325,8 @@ function PostCard({
   milestoneIcon: MilestoneIconType
   postBgPattern: PostBgPattern
   showActionEmoji: boolean
+  // v13.0 new fields
+  postBorderStyle: PostBorderStyle
 }) {
   const bgColor = getPostBgColor(postBackground)
   const br = borderRadius || 3
@@ -2323,10 +2346,18 @@ function PostCard({
     <PostCardWrapper>
       <div style={{
         backgroundColor: '#ffffff',
-        border: '1px solid #dddfe2',
-        borderTop: '2px solid #e5e5e5',
+        ...(postBorderStyle === 'none' || postBorderStyle === 'shadow'
+          ? { border: 'none' }
+          : postBorderStyle === 'dashed'
+            ? { border: '1px dashed #dddfe2', borderTop: '2px dashed #e5e5e5' }
+            : postBorderStyle === 'dotted'
+              ? { border: '1px dotted #dddfe2', borderTop: '2px dotted #e5e5e5' }
+              : { border: '1px solid #dddfe2', borderTop: '2px solid #e5e5e5' }
+        ),
         borderRadius: `${br}px`,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.1), 0 0 3px rgba(0,0,0,0.04)',
+        boxShadow: postBorderStyle === 'shadow'
+          ? '0 4px 16px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.1)'
+          : '0 1px 2px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.08)',
         overflow: 'hidden',
         background: postBackground === 'white'
           ? 'linear-gradient(180deg, #ffffff 0%, #fcfcfd 100%)'
@@ -2873,9 +2904,12 @@ function PostCard({
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '16px',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 transform: r.active ? 'scale(1.15)' : 'scale(1)',
-              }}>
+              }}
+                onMouseOver={(e) => { if (!r.active) { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.backgroundColor = `${r.bg}10`; } else { e.currentTarget.style.transform = 'scale(1.25)'; } }}
+                onMouseOut={(e) => { e.currentTarget.style.transform = r.active ? 'scale(1.15)' : 'scale(1)'; e.currentTarget.style.backgroundColor = r.active ? `${r.bg}15` : 'transparent'; }}
+              >
                 {r.emoji}
               </div>
             ))}

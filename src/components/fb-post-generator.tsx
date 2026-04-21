@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, type MilestoneIconType, type PostBgPattern, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions, milestoneIconOptions, postBgPatternOptions } from './fb-post-preview'
+import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, type MilestoneIconType, type PostBgPattern, type PostBorderStyle, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions, milestoneIconOptions, postBgPatternOptions, postBorderStyleOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -88,7 +88,18 @@ export default function FBPostGenerator() {
   const [milestoneIcon, setMilestoneIcon] = useState<MilestoneIconType>('trophy')
   const [postBgPattern, setPostBgPattern] = useState<PostBgPattern>('none')
   const [showActionEmoji, setShowActionEmoji] = useState(false)
+  const [exportRatio, setExportRatio] = useState<'original' | '1:1' | '4:5' | '9:16'>('original')
+  const [exportBgColor, setExportBgColor] = useState('#e9eaed')
+  const [customExportBgColor, setCustomExportBgColor] = useState('#e9eaed')
+  const [postBorderStyle, setPostBorderStyle] = useState<PostBorderStyle>('solid')
   const { toast } = useToast()
+
+  const exportRatioOptions = [
+    { value: 'original' as const, label: 'Original', icon: '📐', desc: 'Auto height' },
+    { value: '1:1' as const, label: '1:1 Square', icon: '⬜', desc: 'Instagram Post' },
+    { value: '4:5' as const, label: '4:5 Portrait', icon: '📱', desc: 'IG Portrait' },
+    { value: '9:16' as const, label: '9:16 Story', icon: '📲', desc: 'IG/TikTok Story' },
+  ]
 
   // ── Initialize from localStorage ──
   useEffect(() => {
@@ -133,6 +144,7 @@ export default function FBPostGenerator() {
     setMilestoneIcon(data.milestoneIcon || 'trophy')
     setPostBgPattern(data.postBgPattern || 'none')
     setShowActionEmoji(data.showActionEmoji || false)
+    setPostBorderStyle(data.postBorderStyle || 'solid')
     setExpandedSections({
       link: data.sharedLink, comment: data.showCommentPreview, advanced: false,
       taggedFriends: false, postExtras: false, groupPost: !!data.groupPostName,
@@ -167,6 +179,10 @@ export default function FBPostGenerator() {
     setMilestoneIcon('trophy')
     setPostBgPattern('none')
     setShowActionEmoji(false)
+    setExportRatio('original')
+    setExportBgColor('#e9eaed')
+    setCustomExportBgColor('#e9eaed')
+    setPostBorderStyle('solid')
     if (profileInputRef.current) profileInputRef.current.value = ''
     if (imageInputRef.current) imageInputRef.current.value = ''
     if (multiImageInputRef.current) multiImageInputRef.current.value = ''
@@ -183,7 +199,7 @@ export default function FBPostGenerator() {
     const existing = savedPosts.filter(p => !p.name.startsWith('Recent'))
     // Add current as recent
     const now = Date.now()
-    autoRecent.unshift({ name: `Recent - ${new Date(now).toLocaleTimeString()}`, data: { ...postData, attachedImage: '', showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji }, timestamp: now })
+    autoRecent.unshift({ name: `Recent - ${new Date(now).toLocaleTimeString()}`, data: { ...postData, attachedImage: '', showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji, postBorderStyle }, timestamp: now })
     // Keep only 3 recent
     const allRecent = [autoRecent[0], ...savedPosts.filter(p => p.name.startsWith('Recent')).slice(0, 2)]
     const combined = [...allRecent, ...existing].slice(0, 20)
@@ -209,6 +225,7 @@ export default function FBPostGenerator() {
     setMilestoneIcon(post.data.milestoneIcon || 'trophy')
     setPostBgPattern(post.data.postBgPattern || 'none')
     setShowActionEmoji(post.data.showActionEmoji || false)
+    setPostBorderStyle(post.data.postBorderStyle || 'solid')
     toast({ title: 'Post loaded', description: `"${post.name}" applied.` })
   }, [toast])
 
@@ -436,47 +453,103 @@ export default function FBPostGenerator() {
     setIsDownloading(true)
     try {
       const html2canvas = (await import('html2canvas')).default
-      const canvas = await html2canvas(previewRef.current, {
-        scale, useCORS: true, allowTaint: true,
-        backgroundColor: '#e9eaed', logging: false,
+
+      // Temporarily remove overflow constraints for clean capture
+      const el = previewRef.current
+      const originalOverflow = el.style.overflow
+      const originalOverflowY = el.style.overflowY
+      const originalMaxHeight = el.style.maxHeight
+      const originalAspectRatio = el.style.aspectRatio
+
+      let captureEl = el
+
+      if (exportRatio !== 'original') {
+        el.style.overflow = 'visible'
+        el.style.overflowY = 'visible'
+        el.style.maxHeight = 'none'
+      }
+
+      const canvas = await html2canvas(captureEl, {
+        scale,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: exportBgColor || '#e9eaed',
+        logging: false,
       })
+
+      // Restore styles
+      el.style.overflow = originalOverflow
+      el.style.overflowY = originalOverflowY
+      el.style.maxHeight = originalMaxHeight
+      el.style.aspectRatio = originalAspectRatio
+
       const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
       const ext = format === 'jpeg' ? 'jpg' : 'png'
+      const ratioSuffix = exportRatio !== 'original' ? `-${exportRatio.replace(':', 'x')}` : ''
       const link = document.createElement('a')
-      link.download = `facebook-post-2014-${Date.now()}.${ext}`
+      link.download = `fb-post${ratioSuffix}-${Date.now()}.${ext}`
       link.href = canvas.toDataURL(mimeType, 0.95)
+      document.body.appendChild(link)
       link.click()
-      toast({ title: 'Downloaded!', description: `${ext.toUpperCase()} at ${scale}x resolution` })
+      document.body.removeChild(link)
+      toast({ title: 'Downloaded!', description: `${ext.toUpperCase()} at ${scale}x${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
     } catch (err) {
-      console.error('Failed to generate image:', err)
-      toast({ title: 'Error', description: 'Failed to generate image.', variant: 'destructive' })
+      console.error('Download failed:', err)
+      toast({ title: 'Export Failed', description: 'Could not generate image. Try again.', variant: 'destructive' })
     } finally {
       setIsDownloading(false)
     }
-  }, [isDownloading, toast])
+  }, [isDownloading, toast, exportRatio, exportBgColor])
 
   const handleCopyToClipboard = useCallback(async () => {
     if (!previewRef.current) return
     try {
       const html2canvas = (await import('html2canvas')).default
-      const canvas = await html2canvas(previewRef.current, {
-        scale: 2, useCORS: true, allowTaint: true,
-        backgroundColor: '#e9eaed', logging: false,
+
+      // Temporarily remove overflow constraints for clean capture
+      const el = previewRef.current
+      const originalOverflow = el.style.overflow
+      const originalOverflowY = el.style.overflowY
+      const originalMaxHeight = el.style.maxHeight
+      const originalAspectRatio = el.style.aspectRatio
+
+      let captureEl = el
+
+      if (exportRatio !== 'original') {
+        el.style.overflow = 'visible'
+        el.style.overflowY = 'visible'
+        el.style.maxHeight = 'none'
+      }
+
+      const canvas = await html2canvas(captureEl, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: exportBgColor || '#e9eaed',
+        logging: false,
       })
+
+      // Restore styles
+      el.style.overflow = originalOverflow
+      el.style.overflowY = originalOverflowY
+      el.style.maxHeight = originalMaxHeight
+      el.style.aspectRatio = originalAspectRatio
+
       canvas.toBlob(async (blob) => {
         if (blob) {
           try {
             await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-            toast({ title: 'Copied!', description: 'Image copied to clipboard.' })
+            toast({ title: 'Copied!', description: `Image copied to clipboard.${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
           } catch {
             toast({ title: 'Not supported', description: 'Clipboard API unavailable.', variant: 'destructive' })
           }
         }
       })
     } catch (err) {
-      console.error('Failed to copy:', err)
+      console.error('Download failed:', err)
+      toast({ title: 'Export Failed', description: 'Could not generate image. Try again.', variant: 'destructive' })
     }
-  }, [toast])
+  }, [toast, exportRatio, exportBgColor])
 
   // ── Emoji ──
   const insertEmoji = useCallback((emoji: string) => {
@@ -734,7 +807,7 @@ export default function FBPostGenerator() {
                 padding: '2px 8px',
                 color: 'rgba(255,255,255,0.8)',
               }}>
-              v12.0
+              v13.0
             </span>
           </div>
         </div>
@@ -1817,6 +1890,27 @@ export default function FBPostGenerator() {
                             {showActionEmoji ? 'On' : 'Off'}
                           </button>
                         </div>
+
+                        {/* Post Border Style */}
+                        <div className="space-y-0.5">
+                          <Label className="text-xs font-semibold flex items-center gap-1"
+                            style={{ color: darkLabelColor, fontSize: '11px' }}>
+                            <Layers className="w-3 h-3" /> Border Style
+                          </Label>
+                          <select
+                            value={postBorderStyle}
+                            onChange={(e) => setPostBorderStyle(e.target.value as PostBorderStyle)}
+                            className="text-xs rounded border px-2 py-1.5 flex-1"
+                            style={{
+                              borderColor: darkInputBorder, backgroundColor: darkInputBg, color: darkLabelColor,
+                              fontSize: '11px', height: '28px',
+                            }}
+                          >
+                            {postBorderStyleOptions.map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2239,7 +2333,86 @@ export default function FBPostGenerator() {
 
               {/* ─── Export Section ─── */}
               <Card className="border shadow-sm" style={{ borderColor: darkCardBorder, backgroundColor: darkCard }}>
-                <CardContent className="px-4 py-3 space-y-2">
+                <CardContent className="px-4 py-3 space-y-2.5">
+                  {/* Aspect Ratio Selector */}
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1.5" style={{ fontSize: '11px', fontWeight: 600, color: darkLabelColor }}>
+                      <Maximize2 size={12} />
+                      Export Ratio
+                    </div>
+                    <div className="grid grid-cols-4 gap-1">
+                      {exportRatioOptions.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setExportRatio(opt.value)}
+                          className="text-center py-1.5 px-1 rounded"
+                          style={{
+                            fontSize: '9px',
+                            fontWeight: exportRatio === opt.value ? 600 : 400,
+                            backgroundColor: exportRatio === opt.value ? '#e7f3ff' : (isDark ? '#1e1e38' : '#f5f6f7'),
+                            color: exportRatio === opt.value ? '#3b5998' : (isDark ? '#a0a0b8' : '#65676b'),
+                            border: `1px solid ${exportRatio === opt.value ? '#3b5998' : (isDark ? '#3a3a5c' : '#dddfe2')}`,
+                            boxShadow: exportRatio === opt.value ? '0 1px 3px rgba(59,89,152,0.15)' : 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = exportRatio === opt.value ? '0 2px 8px rgba(59,89,152,0.2)' : '0 2px 6px rgba(0,0,0,0.1)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = exportRatio === opt.value ? '0 1px 3px rgba(59,89,152,0.15)' : 'none'; }}
+                        >
+                          <div style={{ fontSize: '14px', lineHeight: 1 }}>{opt.icon}</div>
+                          <div style={{ marginTop: '2px' }}>{opt.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Export Background Color */}
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1.5" style={{ fontSize: '11px', fontWeight: 600, color: darkLabelColor }}>
+                      <Palette size={12} />
+                      Export Background
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {[
+                        { value: '#e9eaed', label: 'FB Gray' },
+                        { value: '#ffffff', label: 'White' },
+                        { value: '#1a1a2e', label: 'Dark' },
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setExportBgColor(opt.value)}
+                          className="text-center py-1 px-1.5 rounded"
+                          style={{
+                            fontSize: '8px', fontWeight: exportBgColor === opt.value ? 600 : 400,
+                            backgroundColor: exportBgColor === opt.value ? '#e7f3ff' : (isDark ? '#1e1e38' : '#f5f6f7'),
+                            color: exportBgColor === opt.value ? '#3b5998' : (isDark ? '#a0a0b8' : '#65676b'),
+                            border: `1px solid ${exportBgColor === opt.value ? '#3b5998' : (isDark ? '#3a3a5c' : '#dddfe2')}`,
+                            cursor: 'pointer', transition: 'all 0.2s ease', minWidth: '50px',
+                          }}
+                          onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                        >
+                          <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: opt.value, border: '1px solid rgba(0,0,0,0.15)', margin: '0 auto 2px' }} />
+                          {opt.label}
+                        </button>
+                      ))}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', transition: 'transform 0.15s ease', cursor: 'pointer' }}
+                        onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.05)' }}
+                        onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+                      >
+                        <input
+                          type="color"
+                          value={exportBgColor === '#e9eaed' || exportBgColor === '#ffffff' || exportBgColor === '#1a1a2e' ? customExportBgColor : exportBgColor}
+                          onChange={e => { setExportBgColor(e.target.value); setCustomExportBgColor(e.target.value) }}
+                          style={{ width: '24px', height: '24px', border: `1px solid ${darkInputBorder}`, borderRadius: '4px', cursor: 'pointer', padding: '0', backgroundColor: 'transparent' }}
+                        />
+                        <span style={{ fontSize: '8px', color: darkTextSecondary }}>Custom</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator style={{ borderColor: darkCardBorder }} />
+
                   <div className="grid grid-cols-2 gap-1.5">
                     <Button
                       className="text-xs gap-1 font-semibold"
@@ -2307,96 +2480,123 @@ export default function FBPostGenerator() {
                 <div className="flex items-center gap-2 flex-wrap">
                   {postData.showNavBar && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#e7f3ff', color: '#3b5998', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#e7f3ff', color: '#3b5998', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       Full Layout
                     </span>
                   )}
                   {postData.postType === 'lifeevent' && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#dbe8f7', color: '#2d5a9e', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#dbe8f7', color: '#2d5a9e', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       🎓 Life Event
                     </span>
                   )}
                   {postData.postType === 'poll' && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#e8f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#e8f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       📊 Poll
                     </span>
                   )}
                   {postData.groupPostName && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#e8f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#e8f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       👥 Group Post
                     </span>
                   )}
                   {postData.showWatermark && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#fff7e0', color: '#8a6d3b', borderColor: '#f0d68a', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#fff7e0', color: '#8a6d3b', borderColor: '#f0d68a', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       Watermark
                     </span>
                   )}
                   {postData.postFontFamily !== 'default' && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#f3e8ff', color: '#6b21a8', borderColor: '#d8b4fe', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#f3e8ff', color: '#6b21a8', borderColor: '#d8b4fe', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       ✏️ Custom Font
                     </span>
                   )}
                   {postData.textStyle !== 'normal' && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#fef3c7', color: '#92400e', borderColor: '#f0d68a', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#fef3c7', color: '#92400e', borderColor: '#f0d68a', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       {postData.textStyle === 'bold' ? 'B Bold' : postData.textStyle === 'italic' ? 'I Italic' : 'Aa Large'}
                     </span>
                   )}
                   {postData.isPinned && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#e8f0fe', color: '#1a56db', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#e8f0fe', color: '#1a56db', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       📌 Pinned
                     </span>
                   )}
                   {postData.sponsoredBy && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#f3f4f6', color: '#4b5563', borderColor: '#d1d5db', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#f3f4f6', color: '#4b5563', borderColor: '#d1d5db', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       📢 Sponsored
                     </span>
                   )}
                   {postData.customBadgeText && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#fff8e1', color: '#e65100', borderColor: '#ffcc02', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#fff8e1', color: '#e65100', borderColor: '#ffcc02', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       ⚡ {postData.customBadgeText}
                     </span>
                   )}
                   {validImages.length >= 2 && (
                     <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                      style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#93c5fd', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#93c5fd', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                       🖼 Multi-Photo
                     </span>
                   )}
                   {showVerifiedBadge && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                    style={{ backgroundColor: '#e8f0fe', color: '#3b5998', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>✓ Verified</span>}
+                    style={{ backgroundColor: '#e8f0fe', color: '#3b5998', borderColor: '#a8c7fa', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>✓ Verified</span>}
                   {reactionType !== 'like' && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                    style={{ backgroundColor: '#fce4ec', color: '#c62828', borderColor: '#f48fb1', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>{reactionTypeOptions.find(r => r.value === reactionType)?.icon} {reactionTypeOptions.find(r => r.value === reactionType)?.label}</span>}
+                    style={{ backgroundColor: '#fce4ec', color: '#c62828', borderColor: '#f48fb1', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>{reactionTypeOptions.find(r => r.value === reactionType)?.icon} {reactionTypeOptions.find(r => r.value === reactionType)?.label}</span>}
                   {postTextColor && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                    style={{ backgroundColor: '#f3e5f5', color: '#7b1fa2', borderColor: '#ce93d8', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🎨 Custom Color</span>}
+                    style={{ backgroundColor: '#f3e5f5', color: '#7b1fa2', borderColor: '#ce93d8', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🎨 Custom Color</span>}
                   {showReactionBar && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                    style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', borderColor: '#a5d6a7', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>👍 Reaction Bar</span>}
+                    style={{ backgroundColor: '#e8f5e9', color: '#2e7d32', borderColor: '#a5d6a7', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>👍 Reaction Bar</span>}
                   {showMilestone && milestoneText && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                    style={{ backgroundColor: '#fff3e0', color: '#e65100', borderColor: '#ffcc80', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🏆 {milestoneText}</span>}
+                    style={{ backgroundColor: '#fff3e0', color: '#e65100', borderColor: '#ffcc80', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🏆 {milestoneText}</span>}
                   {postBgPattern !== 'none' && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                    style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#93c5fd', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🎨 Pattern</span>}
+                    style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#93c5fd', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>🎨 Pattern</span>}
                   {showActionEmoji && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                    style={{ backgroundColor: '#fce4ec', color: '#c62828', borderColor: '#f48fb1', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>😀 Emoji Row</span>}
+                    style={{ backgroundColor: '#fce4ec', color: '#c62828', borderColor: '#f48fb1', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>😀 Emoji Row</span>}
+                  {postBorderStyle !== 'solid' && <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                    style={{ backgroundColor: '#f3f4f6', color: '#4b5563', borderColor: '#d1d5db', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>┫ {postBorderStyleOptions.find(o => o.value === postBorderStyle)?.label}</span>}
+                  {exportRatio !== 'original' && (
+                    <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
+                      style={{ backgroundColor: '#fce4ec', color: '#c62828', borderColor: '#f48fb1', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                      📐 {exportRatio}
+                    </span>
+                  )}
                   <span className="text-xs px-2.5 py-1 rounded-full font-medium border"
-                    style={{ backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '11px', transition: 'all 0.2s ease', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+                    style={{ backgroundColor: '#e6f4ea', color: '#137333', borderColor: '#a8dab5', fontSize: '11px', transition: 'all 0.3s ease', padding: '3px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
                     2014 Style
                   </span>
                 </div>
               </div>
-              <div style={{
-                borderRadius: '4px', overflow: 'hidden',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                border: '1px solid #dddfe2',
-              }}>
-                <FBPostPreview ref={previewRef} data={{ ...postData, reactionType, postTextColor, imageGridLayout, showVerifiedBadge, showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji }} />
+              <div
+                ref={previewRef}
+                style={{
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  ...(exportRatio !== 'original' ? {
+                    border: '2px solid transparent',
+                    backgroundImage: 'linear-gradient(white, white), linear-gradient(135deg, #3b5998, #e74c3c, #f39c12)',
+                    backgroundOrigin: 'border-box',
+                    backgroundClip: 'padding-box, border-box',
+                  } : {
+                    border: '1px solid #dddfe2',
+                  }),
+                  position: 'relative',
+                  width: '100%',
+                  backgroundColor: exportBgColor || undefined,
+                  ...(exportRatio !== 'original' ? {
+                    aspectRatio: exportRatio === '1:1' ? '1/1' : exportRatio === '4:5' ? '4/5' : '9/16',
+                    maxHeight: '80vh',
+                    overflowY: 'auto',
+                  } : {}),
+                }}
+              >
+                <FBPostPreview data={{ ...postData, reactionType, postTextColor, imageGridLayout, showVerifiedBadge, showReactionBar, showMilestone, milestoneText, milestoneIcon, postBgPattern, showActionEmoji, postBorderStyle }} />
               </div>
             </div>
           </div>
@@ -2414,7 +2614,22 @@ export default function FBPostGenerator() {
         marginTop: 'auto',
         letterSpacing: '0.01em',
       }}>
-        Made with ❤️ &middot; 2014 Facebook Post Generator &middot; For entertainment purposes only
+        Made with ❤️ &middot; 2014 Facebook Post Generator &middot;{' '}
+        <span style={{ cursor: 'pointer', transition: 'color 0.2s' }}
+          onMouseOver={(e) => { e.currentTarget.style.color = '#3b5998' }}
+          onMouseOut={(e) => { e.currentTarget.style.color = isDark ? '#a0a0b8' : '#9197a3' }}
+        >Privacy</span>
+        {' &middot; '}
+        <span style={{ cursor: 'pointer', transition: 'color 0.2s' }}
+          onMouseOver={(e) => { e.currentTarget.style.color = '#3b5998' }}
+          onMouseOut={(e) => { e.currentTarget.style.color = isDark ? '#a0a0b8' : '#9197a3' }}
+        >Terms</span>
+        {' &middot; '}
+        <span style={{ cursor: 'pointer', transition: 'color 0.2s' }}
+          onMouseOver={(e) => { e.currentTarget.style.color = '#3b5998' }}
+          onMouseOut={(e) => { e.currentTarget.style.color = isDark ? '#a0a0b8' : '#9197a3' }}
+        >Cookies</span>
+        {' &middot; For entertainment purposes only'}
       </footer>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
