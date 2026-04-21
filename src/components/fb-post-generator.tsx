@@ -455,26 +455,15 @@ export default function FBPostGenerator() {
     try {
       const el = previewRef.current
 
-      // Temporarily remove overflow/ratio/gradient for clean capture
-      const origStyles = {
-        overflow: el.style.overflow,
-        overflowY: el.style.overflowY,
-        maxHeight: el.style.maxHeight,
-        aspectRatio: el.style.aspectRatio,
-        backgroundImage: el.style.backgroundImage,
-        backgroundOrigin: el.style.backgroundOrigin,
-        backgroundClip: el.style.backgroundClip,
-        border: el.style.border,
-      }
+      // Save original inline styles that we'll modify
+      const savedStyles: Record<string, string> = {}
+      const styleKeys = ['overflow', 'maxHeight', 'aspectRatio', 'width', 'maxWidth', 'margin']
+      styleKeys.forEach(k => { savedStyles[k] = el.style[k] })
 
+      // Remove constraints for clean capture — capture full content
       el.style.overflow = 'visible'
-      el.style.overflowY = 'visible'
       el.style.maxHeight = 'none'
       el.style.aspectRatio = 'none'
-      el.style.backgroundImage = 'none'
-      el.style.backgroundOrigin = ''
-      el.style.backgroundClip = ''
-      el.style.border = '1px solid #dddfe2'
 
       const ratioSuffix = exportRatio !== 'original' ? `-${exportRatio.replace(':', 'x')}` : ''
 
@@ -491,8 +480,8 @@ export default function FBPostGenerator() {
         ? await toJpeg(el, options)
         : await toPng(el, options)
 
-      // Restore styles
-      Object.assign(el.style, origStyles)
+      // Restore original styles
+      styleKeys.forEach(k => { el.style[k] = savedStyles[k] })
 
       if (!dataUrl) {
         toast({ title: 'Export Failed', description: 'Generated empty image. Try again.', variant: 'destructive' })
@@ -512,11 +501,6 @@ export default function FBPostGenerator() {
     } catch (err) {
       console.error('Download failed:', err)
       toast({ title: 'Export Failed', description: `Error: ${err instanceof Error ? err.message : String(err)}`, variant: 'destructive' })
-      // Try to restore styles even on error
-      try {
-        const el = previewRef.current
-        if (el) el.style.aspectRatio = ''
-      } catch { /* ignore */ }
     } finally {
       setIsDownloading(false)
     }
@@ -527,25 +511,13 @@ export default function FBPostGenerator() {
     try {
       const el = previewRef.current
 
-      const origStyles = {
-        overflow: el.style.overflow,
-        overflowY: el.style.overflowY,
-        maxHeight: el.style.maxHeight,
-        aspectRatio: el.style.aspectRatio,
-        backgroundImage: el.style.backgroundImage,
-        backgroundOrigin: el.style.backgroundOrigin,
-        backgroundClip: el.style.backgroundClip,
-        border: el.style.border,
-      }
+      const savedStyles: Record<string, string> = {}
+      const styleKeys = ['overflow', 'maxHeight', 'aspectRatio', 'width', 'maxWidth', 'margin']
+      styleKeys.forEach(k => { savedStyles[k] = el.style[k] })
 
       el.style.overflow = 'visible'
-      el.style.overflowY = 'visible'
       el.style.maxHeight = 'none'
       el.style.aspectRatio = 'none'
-      el.style.backgroundImage = 'none'
-      el.style.backgroundOrigin = ''
-      el.style.backgroundClip = ''
-      el.style.border = '1px solid #dddfe2'
 
       const dataUrl = await toPng(el, {
         quality: 0.95,
@@ -554,14 +526,13 @@ export default function FBPostGenerator() {
         style: { transform: 'none' },
       })
 
-      Object.assign(el.style, origStyles)
+      styleKeys.forEach(k => { el.style[k] = savedStyles[k] })
 
       if (!dataUrl) {
         toast({ title: 'Export Failed', description: 'Generated empty image.', variant: 'destructive' })
         return
       }
 
-      // Convert dataURL to blob for clipboard
       const res = await fetch(dataUrl)
       const blob = await res.blob()
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
@@ -2596,23 +2567,36 @@ export default function FBPostGenerator() {
                 ref={previewRef}
                 style={{
                   borderRadius: '4px',
-                  overflow: 'hidden',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  ...(exportRatio !== 'original' ? {
-                    border: '2px solid transparent',
-                    backgroundImage: 'linear-gradient(white, white), linear-gradient(135deg, #3b5998, #e74c3c, #f39c12)',
-                    backgroundOrigin: 'border-box',
-                    backgroundClip: 'padding-box, border-box',
-                  } : {
-                    border: '1px solid #dddfe2',
-                  }),
                   position: 'relative',
-                  width: '100%',
-                  backgroundColor: exportBgColor || undefined,
-                  ...(exportRatio !== 'original' ? {
-                    aspectRatio: exportRatio === '1:1' ? '1/1' : exportRatio === '4:5' ? '4/5' : '9/16',
-                    maxHeight: '80vh',
-                    overflowY: 'auto',
+                  backgroundColor: exportBgColor || '#e9eaed',
+                  ...(exportRatio === 'original' ? {
+                    border: '1px solid #dddfe2',
+                    width: '100%',
+                  } : {}),
+                  ...(exportRatio === '1:1' ? {
+                    width: '100%',
+                    maxWidth: '500px',
+                    aspectRatio: '1/1',
+                    overflow: 'hidden auto',
+                    margin: '0 auto',
+                    border: '2px solid #dddfe2',
+                  } : {}),
+                  ...(exportRatio === '4:5' ? {
+                    width: '100%',
+                    maxWidth: '440px',
+                    aspectRatio: '4/5',
+                    overflow: 'hidden auto',
+                    margin: '0 auto',
+                    border: '2px solid #dddfe2',
+                  } : {}),
+                  ...(exportRatio === '9:16' ? {
+                    width: '360px',
+                    maxWidth: '100%',
+                    aspectRatio: '9/16',
+                    overflow: 'hidden auto',
+                    margin: '0 auto',
+                    border: '2px solid #dddfe2',
                   } : {}),
                 }}
               >

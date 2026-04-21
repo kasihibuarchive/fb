@@ -1,7 +1,27 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
-## Project Status Assessment (Updated after v13.1)
+## Project Status Assessment (Updated after v13.2)
+
+**Current Status:** ✅ v13.2 — Aspect ratio visual fix + export library replacement
+
+**Bug Fixes:**
+1. **Aspect ratio display fix**: Ratios now visually change the preview shape:
+   - **Original**: Full width, no constraint
+   - **1:1 Square**: maxWidth 500px, square frame (Instagram post)
+   - **4:5 Portrait**: maxWidth 440px, slightly taller than wide (IG portrait)
+   - **9:16 Story**: Fixed 360px width, tall frame (phone screen / IG story)
+   - Each ratio has `overflow: hidden auto` for scrolling content that exceeds the frame
+   - Removed broken gradient border (replaced with simple `2px solid #dddfe2`)
+   - `margin: 0 auto` centers the constrained preview
+2. **Export library replacement (v13.1)**: Replaced html2canvas with html-to-image to fix `lab()` color parsing error
+3. **React `borderColor`/`borderLeft` conflict warning fixed**
+
+**QA Verified:**
+- ✅ 9:16 renders at 360×640 (phone screen shape) — confirmed via getComputedStyle
+- ✅ PNG/JPEG download works in all ratio modes
+- ✅ ESLint: clean (0 errors)
+- ✅ Zero console errors on fresh load
 
 **Current Status:** ✅ v13.1 — Export bug fix (critical)
 
