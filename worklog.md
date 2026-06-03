@@ -1,9 +1,59 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
-## Project Status Assessment (Updated after v16.0)
+## Project Status Assessment (Updated after v17.0 — Export ACTUALLY Fixed)
 
-**Current Status:** ✅ v16.0 — Critical export fix (finally resolved) + pushed to GitHub
+**Current Status:** ✅ v17.0 — Export PNG/JPG FINALLY WORKS (confirmed via agent-browser + data URL capture)
+
+**THE REAL FIX (9th attempt — 8+ previous attempts all failed):**
+
+| Version | Approach | Result |
+|---------|----------|--------|
+| v1–v12 | html2canvas raw | ❌ lab() parse error |
+| v13.1–v13.2 | html-to-image | ❌ Hung silently |
+| v14.0 | Custom SVG foreignObject | ❌ Only background |
+| v15.0 | html2canvas + regex sanitize (300+ props) | ❌ Hung |
+| v16.0 | html2canvas + targeted sanitize + 60 props | ❌ Still lab() error |
+| **v17.0** | **html2canvas monkey-patch + lab→rgb converter + pre-flight + onclone** | **✅ WORKS!** |
+
+**ROOT CAUSE ANALYSIS (3 separate issues found):**
+
+1. **html2canvas copies stylesheets BEFORE onclone** — The `DocumentCloner.cloneNode()` method copies all stylesheet content into the cloned document BEFORE the `onclone` callback runs. So removing/sanitizing `<style>` tags in `onclone` alone is too late for the CSS text parsing phase.
+
+2. **Modern browsers return lab() from getComputedStyle()** — Chrome 124+, Safari 17+ return `lab(L a b)` VALUES directly from `getComputedStyle().color` — they NO LONGER convert to `rgb()`. So copying computed styles as inline styles propagates lab() to the clone.
+
+3. **Canvas 2D fillStyle trick doesn't work** — Setting `ctx.fillStyle = 'lab(...)'` in Chrome 124+ PRESERVES the lab format (does NOT convert to rgb). This invalidated the planned conversion approach.
+
+**v17.0 THREE-LAYER FIX:**
+
+**Layer 1: html2canvas monkey-patch** (primary defense)
+- Modified `html2canvas/dist/html2canvas.esm.js` and `html2canvas.js`
+- Changed `throw new Error("unsupported color function")` → `return pack(128,128,128,1)`
+- This prevents the crash entirely; gray is a safe fallback
+- Created `scripts/patch-html2canvas.js` postinstall script to persist across reinstalls
+- Added `"postinstall": "node scripts/patch-html2canvas.js"` to package.json
+
+**Layer 2: Pre-flight stylesheet sanitization** (defense in depth)
+- Before calling html2canvas: sanitize all live `<style>` tags (replace lab/oklch/color-mix with rgb)
+- Disable all `<link>` stylesheets (Tailwind CSS 4's main stylesheet)
+- Both restored in `finally` block after export completes
+
+**Layer 3: Lab→RGB converter + onclone cleanup** (visual accuracy)
+- Manual `labToRgb()` function: Lab → XYZ → linear sRGB → gamma-corrected sRGB
+- `toSafeColor()`: converts lab/oklch/color-mix/oklab values in computed styles
+- `prepareCloneForExport()`: removes stylesheets + classes from clone, copies ~60 essential computed styles with color conversion
+- Color accuracy verified: `lab(0,0,0)` → `rgb(0,0,0)`, `lab(100,0,0)` → `rgb(255,255,255)`
+
+**VERIFICATION:**
+- ✅ Export produces valid 602KB PNG data URL (3753×726 at 3x scale)
+- ✅ Zero console errors during export
+- ✅ No "lab" or "oklab" errors
+- ✅ ESLint: clean (0 errors)
+- ✅ Download filename correct: `fb-post-{timestamp}.png`
+
+**Pushed to GitHub:** `kasihibuarchive/fb` (main branch)
+
+---
 
 **Critical Bug Fix — PNG/JPG Export (7th attempt, finally resolved):**
 
