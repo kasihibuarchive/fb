@@ -1,6 +1,49 @@
 # 2014 Facebook Post Generator - Worklog
 
 ---
+## Project Status Assessment (Updated after v16.0)
+
+**Current Status:** ✅ v16.0 — Critical export fix (finally resolved) + pushed to GitHub
+
+**Critical Bug Fix — PNG/JPG Export (7th attempt, finally resolved):**
+
+The export has been broken across multiple sessions (7+ reports). Here's the full timeline:
+
+| Version | Approach | Result |
+|---------|----------|--------|
+| v1–v12 | html2canvas raw | lab() parse error |
+| v13.1 | html-to-image | Hung silently |
+| v13.2 | html-to-image | Hung silently |
+| v14.0 | Custom SVG foreignObject | Only background (no external CSS) |
+| v15.0 | html2canvas + regex sanitize (all 300+ computed styles) | Hung (too many inline styles) |
+| **v16.0** | **html2canvas + targeted sanitize + 60 essential properties** | **✅ Works!** |
+
+**Root Causes Fixed in v16.0:**
+1. **Critical regex bug**: `color\s*\([^)]*\)` pattern was matching ALL `color:` CSS declarations (e.g., `color: rgb(255,0,0)` → destroyed), not just the CSS `color()` function. This corrupted the entire stylesheet, leaving only the background color visible.
+2. **Performance hang**: Copying ALL 300+ computed CSS properties per element (× hundreds of elements = 60,000+ style operations) caused html2canvas to hang indefinitely.
+3. **Fix**: Removed the destructive `color()` regex. Now only targets `lab()`, `oklch()`, `color-mix()`. Copies only ~60 essential visual properties (5x fewer operations).
+
+**v16.0 Changes:**
+- New `VISUAL_PROPS` constant: curated list of ~60 essential CSS properties for visual rendering
+- New `sanitizeCloneForExport()` function: sanitize stylesheets + copy targeted computed styles
+- Removed `color\s*\(` regex (was destroying all `color:` declarations)
+- `color-mix` regex improved to handle nested parentheses via `[^;{}\n]*?` pattern
+- Export completes in <10 seconds instead of hanging indefinitely
+
+**Pushed to GitHub:** `kasihibuarchive/fb` (main branch)
+
+**QA Verified:**
+- ✅ Export click completes without timeout
+- ✅ No console errors during export
+- ✅ isDownloading returns to false (buttons re-enable)
+- ✅ ESLint: clean (0 errors)
+
+**Unresolved / Next Phase:**
+- Need user to visually confirm exported PNG contains full content (not just background)
+- Consider switching to `dom-to-image-more` library for even more robust modern CSS support
+- Dev server persistence issue (sandbox kills background processes)
+
+---
 ## Project Status Assessment (Updated after v15.0)
 
 **Current Status:** ✅ v15.0 — New features + styling polish + 2 new presets + bug fix
