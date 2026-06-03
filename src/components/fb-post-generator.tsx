@@ -1,199 +1,31 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import html2canvas from 'html2canvas'
+import { domToDataUrl } from 'modern-screenshot'
 
 /**
- * FIX: html2canvas v1.4.1 crashes on Tailwind CSS 4's lab()/oklch()/color-mix().
- *
- * ROOT CAUSE: Modern browsers (Chrome 124+) return lab()/oklch() VALUES directly
- * from getComputedStyle() — they NO LONGER convert to rgb(). So when we copy
- * computed styles as inline styles, we're copying lab() values → html2canvas crashes.
- *
- * FIX: Manual Lab→RGB color conversion. Canvas 2D fillStyle trick does NOT work
- * in Chrome 124+ (it preserves lab format). So we parse lab() ourselves and convert.
- *
- * STRATEGY (double defense):
- *   1. PRE-FLIGHT: Sanitize live <style> tags (replace lab→rgb) before html2canvas clones.
- *      html2canvas copies stylesheets DURING cloning (before onclone), so onclone-only
- *      cleanup is too late.
- *   2. ONCLONE: Remove all stylesheets + class attrs from clone. Copy computed styles
- *      with lab→rgb conversion so inline styles are safe for html2canvas parsing.
+ * Export engine using modern-screenshot (v4.x).
+ * Unlike html2canvas, modern-screenshot natively supports all modern CSS color
+ * functions (lab, oklch, oklab, color-mix, etc.) used by Tailwind CSS 4.
+ * No workarounds needed.
  */
-
-/**
- * Convert CIE Lab color to sRGB string.
- * Lab format from getComputedStyle: "lab(L a b)" where L=0-100, a/b are numbers.
- * Uses D65 white point and standard sRGB gamma.
- */
-function labToRgb(labStr: string): string {
-  // Parse lab(L a b) — handle both "lab(59.686% 0.219 19.13)" and "lab(59.686 0.219 19.13)"
-  const m = labStr.match(/lab\(\s*([\d.]+)%?\s+([\d.e+-]+)\s+([\d.e+-]+)\s*\)/)
-  if (!m) return labStr // Can't parse, return as-is
-
-  const L = parseFloat(m[1])
-  const a = parseFloat(m[2])
-  const b = parseFloat(m[3])
-
-  // D65 white point
-  const Xn = 0.95047, Yn = 1.00000, Zn = 1.08883
-  const delta = 6 / 29
-  const deltaSq = delta * delta
-
-  // Lab → XYZ (inverse of f function)
-  const fy = (L + 16) / 116
-  const fx = a / 500 + fy
-  const fz = fy - b / 200
-
-  const X = (fx > delta) ? Xn * fx * fx * fx : Xn * (fx - 16 / 116) * 3 * deltaSq
-  const Y = (fy > delta) ? Yn * fy * fy * fy : Yn * (fy - 16 / 116) * 3 * deltaSq
-  const Z = (fz > delta) ? Zn * fz * fz * fz : Zn * (fz - 16 / 116) * 3 * deltaSq
-
-  // XYZ → linear sRGB
-  let rl = X * 3.2404542 - Y * 1.5371385 - Z * 0.4985314
-  let gl = -X * 0.9692660 + Y * 1.8760108 + Z * 0.0415560
-  let bl = X * 0.0556434 - Y * 0.2040259 + Z * 1.0572252
-
-  // sRGB gamma correction
-  const gamma = (c: number) => c > 0.0031308 ? 1.055 * Math.pow(c, 1 / 2.4) - 0.055 : 12.92 * c
-  const clamp = (v: number) => Math.round(Math.max(0, Math.min(255, v * 255)))
-
-  return `rgb(${clamp(gamma(rl))}, ${clamp(gamma(gl))}, ${clamp(gamma(bl))})`
-}
-
-/** Convert any CSS color value containing lab/oklch to safe rgb() format. */
-function toSafeColor(val: string): string {
-  if (!val) return val
-  if (val.includes('lab(')) {
-    // Replace all lab(...) occurrences with rgb(...) 
-    // Handle multiple lab() in one value (e.g., box-shadow)
-    return val.replace(/lab\([^)]+\)/g, labToRgb)
-  }
-  if (val.includes('oklch(')) {
-    // oklch is rare but handle it — replace with neutral gray
-    return val.replace(/oklch\([^)]+\)/g, 'rgb(128,128,128)')
-  }
-  if (val.includes('color-mix(')) {
-    return val.replace(/color-mix\([^)]*\)/g, 'rgb(128,128,128)')
-  }
-  return val
-}
-
-/** Properties whose values may contain color functions (lab/oklch/color-mix). */
-const COLOR_PROPS = new Set([
-  'color', 'background-color', 'border-top-color', 'border-right-color',
-  'border-bottom-color', 'border-left-color', 'outline-color',
-  'box-shadow', 'text-shadow', 'background-image',
-])
-
-const VISUAL_PROPS = [
-  'color','background-color','background-image','background-size','background-position',
-  'background-repeat','background-clip','background-origin','border-collapse',
-  'border-top-color','border-right-color','border-bottom-color','border-left-color',
-  'outline-color','font-family','font-size','font-weight','font-style','font-variant',
-  'line-height','letter-spacing','text-align','text-decoration','text-transform',
-  'text-indent','white-space','word-break','word-spacing','direction',
-  'display','position','top','right','bottom','left',
-  'width','height','min-width','min-height','max-width','max-height',
-  'margin-top','margin-right','margin-bottom','margin-left',
-  'padding-top','padding-right','padding-bottom','padding-left',
-  'float','clear','flex-direction','flex-wrap','justify-content','align-items',
-  'align-self','flex-grow','flex-shrink','flex-basis','gap','row-gap','column-gap',
-  'order','border-top-width','border-right-width','border-bottom-width','border-left-width',
-  'border-top-style','border-right-style','border-bottom-style','border-left-style',
-  'border-top-left-radius','border-top-right-radius','border-bottom-left-radius','border-bottom-right-radius',
-  'opacity','visibility','overflow','overflow-x','overflow-y',
-  'box-shadow','text-shadow','z-index','object-fit','object-position',
-  'transform','transform-origin','vertical-align','box-sizing','aspect-ratio',
-  'cursor','pointer-events','content','list-style-type','list-style-position',
-  'border-spacing','table-layout','text-overflow','overflow-wrap',
-] as const
-
-function prepareCloneForExport(originalEl: HTMLElement, clonedEl: HTMLElement): void {
-  const doc = clonedEl.ownerDocument
-
-  // STEP 1: Remove ALL stylesheets — no CSS text for html2canvas to parse
-  doc.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => el.remove())
-  doc.querySelectorAll('noscript').forEach(el => el.remove())
-
-  // STEP 2: Remove ALL class attributes (stylesheet is gone, classes serve no purpose
-  //         and html2canvas might try to look them up, causing issues)
-  doc.querySelectorAll('[class]').forEach(el => el.removeAttribute('class'))
-
-  // STEP 3: Copy essential computed styles from original → clone as inline overrides
-  //         Color values are converted lab/oklch → rgb via Canvas2D trick
-  const copyStyles = (origEl: HTMLElement, cloneEl: HTMLElement) => {
-    const cs = window.getComputedStyle(origEl)
-    const st = cloneEl.style
-    for (const prop of VISUAL_PROPS) {
-      try {
-        let v = cs.getPropertyValue(prop)
-        if (!v) continue
-        // Convert modern color functions (lab/oklch/color-mix) → safe rgb()
-        if (COLOR_PROPS.has(prop)) v = toSafeColor(v)
-        st.setProperty(prop, v)
-      } catch {/* */}
-    }
-  }
-
-  // Copy styles for the root element
-  copyStyles(originalEl, clonedEl)
-
-  // Copy styles for all child elements (matched by index)
-  const origNodes = originalEl.querySelectorAll('*')
-  const cloneNodes = clonedEl.querySelectorAll('*')
-  const len = Math.min(origNodes.length, cloneNodes.length)
-  for (let i = 0; i < len; i++) {
-    copyStyles(origNodes[i] as HTMLElement, cloneNodes[i] as HTMLElement)
-  }
-}
-
 async function captureElement(el: HTMLElement, scale: number, bgColor: string, format: 'png' | 'jpeg'): Promise<string> {
   const width = el.scrollWidth
   const height = el.scrollHeight
   if (width === 0 || height === 0) throw new Error('Element has zero dimensions')
 
-  // ═══════════════════════════════════════════════════════════════
-  // PRE-FLIGHT SANITIZATION (before html2canvas starts)
-  // html2canvas copies stylesheets DURING cloning (before onclone callback).
-  // So we must sanitize ALL CSS sources in the LIVE document first.
-  // ═══════════════════════════════════════════════════════════════
-  const liveStyleTags = document.querySelectorAll('style')
-  const liveLinkTags = document.querySelectorAll('link[rel="stylesheet"]')
-  const originalContents: string[] = []
-
-  // Step 1: Sanitize <style> tags — replace lab/oklch/color-mix with safe rgb
-  liveStyleTags.forEach((tag, i) => {
-    originalContents[i] = tag.textContent || ''
-    tag.textContent = originalContents[i]
-      .replace(/lab\s*\([^)]*\)/gi, 'rgb(128,128,128)')
-      .replace(/oklch\s*\([^)]*\)/gi, 'rgb(128,128,128)')
-      .replace(/color-mix\s*\([^)]*\)/gi, 'rgb(128,128,128)')
+  const dataUrl = await domToDataUrl(el, {
+    width,
+    height,
+    scale,
+    backgroundColor: bgColor,
+    quality: 0.95,
+    type: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    timeout: 15000,
   })
 
-  // Step 2: Disable <link> stylesheets — they may contain lab() from Tailwind CSS 4
-  //         We can't modify their text content (loaded from URL), so we disable them
-  liveLinkTags.forEach(tag => { tag.disabled = true })
-
-  try {
-    const canvas = await html2canvas(el, {
-      backgroundColor: bgColor,
-      scale,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      onclone: (_doc, clone) => prepareCloneForExport(el, clone),
-    })
-
-    const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
-    return canvas.toDataURL(mimeType, 0.95)
-  } finally {
-    // RESTORE: Put original CSS back
-    liveStyleTags.forEach((tag, i) => {
-      tag.textContent = originalContents[i]
-    })
-    liveLinkTags.forEach(tag => { tag.disabled = false })
-  }
+  if (!dataUrl) throw new Error('Failed to generate image')
+  return dataUrl
 }
 import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, type MilestoneIconType, type PostBgPattern, type PostBorderStyle, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions, milestoneIconOptions, postBgPatternOptions, postBorderStyleOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
