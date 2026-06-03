@@ -4,39 +4,92 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import html2canvas from 'html2canvas'
 
 /**
- * FIX: html2canvas v1.4.1 crashes on Tailwind CSS 4's lab()/oklch()/color()/color-mix().
+ * FIX: html2canvas v1.4.1 crashes on Tailwind CSS 4's lab()/oklch()/color-mix().
  *
- * Strategy — nuclear option (remove all stylesheets, copy everything inline):
- *   1. REMOVE all <style> and <link rel="stylesheet"> tags from the cloned document.
- *      This eliminates any chance of html2canvas encountering lab()/oklch().
- *   2. COPY ALL computed styles from every original element → its clone as inline styles.
- *      getComputedStyle() already resolves lab()→rgb(), oklch()→rgb(), etc. so every
- *      property value is a safe, parseable value. Inline styles are self-contained —
- *      no stylesheet references needed.
+ * Strategy — sanitize + selective inline override:
+ *   1. SANITIZE <style> tags: replace lab(), oklch(), color-mix() with safe rgb() values.
+ *      IMPORTANT: Do NOT match "color(" alone — it would destroy "color: rgb(...)" declarations.
+ *      Only match "color-mix(", "oklch(", "lab(" which are actual unsupported CSS functions.
+ *   2. COPY only ~50 essential visual properties from computed styles as inline overrides.
+ *      This is fast enough for html2canvas to process (vs 300+ properties per element).
+ *      Inline styles override the (now-sanitized) stylesheet values, ensuring correct colors.
  */
-function copyComputedStyles(originalEl: HTMLElement, clonedEl: HTMLElement): void {
-  // Step 1: Remove ALL stylesheets from the clone document
+
+// Curated list of CSS properties essential for visual rendering.
+// Copying only these (instead of all 300+) keeps html2canvas fast.
+const VISUAL_PROPS = [
+  // Colors & backgrounds
+  'color', 'background-color', 'background-image', 'background-size', 'background-position',
+  'background-repeat', 'background-clip', 'background-origin',
+  'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color',
+  'outline-color',
+  // Typography
+  'font-family', 'font-size', 'font-weight', 'font-style',
+  'line-height', 'letter-spacing', 'text-align', 'text-decoration', 'text-transform',
+  'white-space', 'word-break',
+  // Layout
+  'display', 'position', 'top', 'right', 'bottom', 'left',
+  'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
+  'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+  'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+  'float', 'clear',
+  // Flexbox
+  'flex-direction', 'flex-wrap', 'justify-content', 'align-items', 'align-self',
+  'flex-grow', 'flex-shrink', 'flex-basis', 'gap', 'row-gap', 'column-gap',
+  // Borders
+  'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width',
+  'border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style',
+  'border-top-left-radius', 'border-top-right-radius',
+  'border-bottom-left-radius', 'border-bottom-right-radius',
+  // Visual
+  'opacity', 'visibility', 'overflow', 'overflow-x', 'overflow-y',
+  'box-shadow', 'text-shadow', 'z-index',
+  'object-fit', 'object-position',
+  'transform', 'transform-origin',
+  'vertical-align', 'box-sizing', 'aspect-ratio',
+  'content',
+] as const
+
+function sanitizeCloneForExport(originalEl: HTMLElement, clonedEl: HTMLElement): void {
   const doc = clonedEl.ownerDocument
-  doc.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => el.remove())
 
-  // Step 2: Copy computed styles for the root element itself
-  const rootCs = window.getComputedStyle(originalEl)
-  for (let i = 0; i < rootCs.length; i++) {
-    const prop = rootCs[i]
-    try { clonedEl.style.setProperty(prop, rootCs.getPropertyValue(prop)) } catch { /* read-only */ }
-  }
+  // Step 1: Sanitize stylesheet text — neutralize ONLY unsupported CSS color functions.
+  // Do NOT use "color(" pattern — it would destroy "color: rgb(...)" declarations!
+  doc.querySelectorAll('style').forEach(tag => {
+    try {
+      let css = tag.textContent || ''
+      // Replace lab(), oklch(), color-mix() — these are the actual unsupported functions.
+      // Use a greedy match to handle nested parentheses in color-mix(in oklch, ...)
+      css = css.replace(/color-mix\s*\([^;{}\n]*?\)/gi, 'rgb(128,128,128)')
+      css = css.replace(/oklch\s*\([^)]*\)/gi, 'rgb(128,128,128)')
+      css = css.replace(/lab\s*\([^)]*\)/gi, 'rgb(128,128,128)')
+      tag.textContent = css
+    } catch { /* ignore */ }
+  })
 
-  // Step 3: Copy computed styles for ALL descendant elements (by index, guaranteed same order)
+  // Step 2: Copy essential computed styles from original → clone as inline overrides.
+  // This corrects any colors/values that were replaced by the sanitization above.
   const origNodes = originalEl.querySelectorAll('*')
   const cloneNodes = clonedEl.querySelectorAll('*')
   const len = Math.min(origNodes.length, cloneNodes.length)
+
+  // Also handle the root element
+  const rootCs = window.getComputedStyle(originalEl)
+  for (const prop of VISUAL_PROPS) {
+    try {
+      const val = rootCs.getPropertyValue(prop)
+      if (val) clonedEl.style.setProperty(prop, val)
+    } catch { /* read-only */ }
+  }
+
   for (let i = 0; i < len; i++) {
-    const orig = origNodes[i] as HTMLElement
-    const clone = cloneNodes[i] as HTMLElement
-    const cs = window.getComputedStyle(orig)
-    for (let j = 0; j < cs.length; j++) {
-      const prop = cs[j]
-      try { clone.style.setProperty(prop, cs.getPropertyValue(prop)) } catch { /* read-only */ }
+    const cs = window.getComputedStyle(origNodes[i] as HTMLElement)
+    const cloneStyle = (cloneNodes[i] as HTMLElement).style
+    for (const prop of VISUAL_PROPS) {
+      try {
+        const val = cs.getPropertyValue(prop)
+        if (val) cloneStyle.setProperty(prop, val)
+      } catch { /* read-only */ }
     }
   }
 }
@@ -52,7 +105,7 @@ async function captureElement(el: HTMLElement, scale: number, bgColor: string, f
     useCORS: true,
     allowTaint: true,
     logging: false,
-    onclone: (_doc, clone) => copyComputedStyles(el, clone),
+    onclone: (_doc, clone) => sanitizeCloneForExport(el, clone),
   })
 
   const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
