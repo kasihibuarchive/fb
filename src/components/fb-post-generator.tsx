@@ -1,44 +1,44 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-// Custom DOM-to-image export using SVG foreignObject + Canvas
-// This approach is more reliable than third-party libraries (html-to-image, html2canvas)
-// which can hang on complex DOM trees or modern CSS features.
+import html2canvas from 'html2canvas'
 
-/** Convert all <img> tags in a DOM tree to inline base64 data URIs */
-async function inlineImages(root: HTMLElement): Promise<void> {
-  const images = root.querySelectorAll('img')
-  await Promise.all(Array.from(images).map(async (img) => {
-    const src = img.getAttribute('src')
-    if (!src || src.startsWith('data:')) return
-    try {
-      const resp = await fetch(src, { mode: 'cors' })
-      const blob = await resp.blob()
-      const reader = new FileReader()
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(blob)
-      })
-      img.setAttribute('src', dataUrl)
-    } catch {
-      // If fetch fails (CORS), leave original src — image may not render but won't crash
+/**
+ * FIX: html2canvas v1.4.1 crashes on Tailwind CSS 4's lab()/oklch()/color()/color-mix().
+ *
+ * Strategy — nuclear option (remove all stylesheets, copy everything inline):
+ *   1. REMOVE all <style> and <link rel="stylesheet"> tags from the cloned document.
+ *      This eliminates any chance of html2canvas encountering lab()/oklch().
+ *   2. COPY ALL computed styles from every original element → its clone as inline styles.
+ *      getComputedStyle() already resolves lab()→rgb(), oklch()→rgb(), etc. so every
+ *      property value is a safe, parseable value. Inline styles are self-contained —
+ *      no stylesheet references needed.
+ */
+function copyComputedStyles(originalEl: HTMLElement, clonedEl: HTMLElement): void {
+  // Step 1: Remove ALL stylesheets from the clone document
+  const doc = clonedEl.ownerDocument
+  doc.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => el.remove())
+
+  // Step 2: Copy computed styles for the root element itself
+  const rootCs = window.getComputedStyle(originalEl)
+  for (let i = 0; i < rootCs.length; i++) {
+    const prop = rootCs[i]
+    try { clonedEl.style.setProperty(prop, rootCs.getPropertyValue(prop)) } catch { /* read-only */ }
+  }
+
+  // Step 3: Copy computed styles for ALL descendant elements (by index, guaranteed same order)
+  const origNodes = originalEl.querySelectorAll('*')
+  const cloneNodes = clonedEl.querySelectorAll('*')
+  const len = Math.min(origNodes.length, cloneNodes.length)
+  for (let i = 0; i < len; i++) {
+    const orig = origNodes[i] as HTMLElement
+    const clone = cloneNodes[i] as HTMLElement
+    const cs = window.getComputedStyle(orig)
+    for (let j = 0; j < cs.length; j++) {
+      const prop = cs[j]
+      try { clone.style.setProperty(prop, cs.getPropertyValue(prop)) } catch { /* read-only */ }
     }
-  }))
-}
-
-function nodeToSvgString(node: HTMLElement, width: number, height: number, bgColor: string): string {
-  const clone = node.cloneNode(true) as HTMLElement
-  const serializer = new XMLSerializer()
-  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
-  <rect width="100%" height="100%" fill="${bgColor}"/>
-  <foreignObject width="100%" height="100%" xmlns="http://www.w3.org/1999/xhtml">
-    <div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:visible;">
-      ${serializer.serializeToString(clone)}
-    </div>
-  </foreignObject>
-</svg>`
-  return svgStr
+  }
 }
 
 async function captureElement(el: HTMLElement, scale: number, bgColor: string, format: 'png' | 'jpeg'): Promise<string> {
@@ -46,39 +46,17 @@ async function captureElement(el: HTMLElement, scale: number, bgColor: string, f
   const height = el.scrollHeight
   if (width === 0 || height === 0) throw new Error('Element has zero dimensions')
 
-  // Clone and inline images so they render correctly inside blob: SVG
-  const clone = el.cloneNode(true) as HTMLElement
-  await inlineImages(clone)
+  const canvas = await html2canvas(el, {
+    backgroundColor: bgColor,
+    scale,
+    useCORS: true,
+    allowTaint: true,
+    logging: false,
+    onclone: (_doc, clone) => copyComputedStyles(el, clone),
+  })
 
-  const svgString = nodeToSvgString(clone, width, height, bgColor)
-  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
-  const url = URL.createObjectURL(svgBlob)
-
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new Image()
-      const timeout = setTimeout(() => reject(new Error('Image load timeout (10s)')), 10000)
-      image.onload = () => { clearTimeout(timeout); resolve(image) }
-      image.onerror = () => { clearTimeout(timeout); reject(new Error('Failed to load SVG image')) }
-      image.src = url
-    })
-
-    const canvas = document.createElement('canvas')
-    canvas.width = width * scale
-    canvas.height = height * scale
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Canvas context unavailable')
-
-    ctx.fillStyle = bgColor
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.scale(scale, scale)
-    ctx.drawImage(img, 0, 0)
-
-    const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
-    return canvas.toDataURL(mimeType, 0.95)
-  } finally {
-    URL.revokeObjectURL(url)
-  }
+  const mimeType = format === 'jpeg' ? 'image/jpeg' : 'image/png'
+  return canvas.toDataURL(mimeType, 0.95)
 }
 import { FBPostPreview, type FBPostData, type VisibilityOption, type CommentData, type ReplyData, type PostBackgroundOption, type CommentSortOrder, type EngagementVisibility, type ReactionType, type MilestoneIconType, type PostBgPattern, type PostBorderStyle, defaultPostData, defaultComment, presets, feelingOptions, postBackgroundOptions, commentSortOptions, engagementVisibilityOptions, lifeEventCategoryOptions, fontFamilyOptions, reactionTypeOptions, milestoneIconOptions, postBgPatternOptions, postBorderStyleOptions } from './fb-post-preview'
 import { Button } from '@/components/ui/button'
@@ -619,19 +597,31 @@ export default function FBPostGenerator() {
         return
       }
 
-      const res = await fetch(dataUrl)
-      const blob = await res.blob()
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      setExportStatus('✅ Copied to clipboard!')
-      toast({ title: 'Copied!', description: `Image copied to clipboard.${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
+      try {
+        const res = await fetch(dataUrl)
+        const blob = await res.blob()
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+        setExportStatus('✅ Copied to clipboard!')
+        toast({ title: 'Copied!', description: `Image copied.${exportRatio !== 'original' ? ` (${exportRatio})` : ''}` })
+      } catch {
+        const link = document.createElement('a')
+        link.download = `fb-post-clipboard-${Date.now()}.png`
+        link.href = dataUrl
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        setTimeout(() => document.body.removeChild(link), 200)
+        setExportStatus('✅ Downloaded (clipboard unavailable)')
+        toast({ title: 'Downloaded', description: 'Clipboard unavailable — saved as PNG.' })
+      }
       setTimeout(() => setExportStatus(''), 3000)
     } catch (err) {
       console.error('Copy failed:', err)
       styleKeys.forEach(k => { el.style[k] = savedStyles[k] })
       const msg = err instanceof Error ? err.message : String(err)
-      setExportStatus('❌ Clipboard unavailable')
-      toast({ title: 'Not supported', description: 'Clipboard API unavailable.', variant: 'destructive' })
-      setTimeout(() => setExportStatus(''), 3000)
+      setExportStatus(`❌ Failed: ${msg}`)
+      toast({ title: 'Export Failed', description: msg, variant: 'destructive' })
+      setTimeout(() => setExportStatus(''), 5000)
     } finally {
       setIsDownloading(false)
     }
